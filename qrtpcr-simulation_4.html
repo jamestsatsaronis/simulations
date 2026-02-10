@@ -566,8 +566,54 @@
   <div class="main-grid">
     <!-- Left Column -->
     <div class="left-panel">
-      <!-- DNA Visualisation (FIRST — above the amplification plot) -->
+      <!-- Cycle Controls (TOP — above everything) -->
       <div class="card">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-green);"></span>
+          Cycle Controls
+        </div>
+
+        <div class="cycle-slider-section" style="margin-top: 0;">
+          <div class="slider-header">
+            <label>Current Cycle</label>
+            <div class="cycle-display" id="cycleDisplay">1 <span>/ 40</span></div>
+          </div>
+          <input type="range" id="cycleSlider" min="1" max="40" value="1" step="1">
+
+          <!-- Cycle Stages -->
+          <div class="cycle-stages">
+            <div class="stage denature" id="stageDenature">
+              <div class="stage-temp">95 °C</div>
+              <div class="stage-name">Denature</div>
+              <div class="stage-desc">dsDNA → ssDNA</div>
+            </div>
+            <div class="stage anneal" id="stageAnneal">
+              <div class="stage-temp">60 °C</div>
+              <div class="stage-name">Anneal</div>
+              <div class="stage-desc">Primers bind</div>
+            </div>
+            <div class="stage extend" id="stageExtend">
+              <div class="stage-temp">72 °C</div>
+              <div class="stage-name">Extend</div>
+              <div class="stage-desc">Taq synthesis + SYBR binds dsDNA</div>
+            </div>
+          </div>
+
+          <!-- Playback -->
+          <div class="playback-controls">
+            <button class="play-btn" id="playBtn" onclick="togglePlay()">
+              <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              <span id="playLabel">Play</span>
+            </button>
+            <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1×</button>
+            <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2×</button>
+            <button class="speed-btn" data-speed="5" onclick="setSpeed(5)">5×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DNA Visualisation -->
+      <div class="card" style="margin-top: 20px;">
         <div class="card-title">
           <span class="dot" style="background: var(--accent-blue);"></span>
           Template Doubling Visualisation
@@ -607,7 +653,7 @@
         </div>
       </div>
 
-      <!-- Amplification Plot (SECOND — below the doubling vis) -->
+      <!-- Amplification Plot -->
       <div class="card" style="margin-top: 20px;">
         <div class="card-title">
           <span class="dot" style="background: var(--accent-green);"></span>
@@ -623,45 +669,6 @@
               <button class="toggle-btn active" data-scale="linear" onclick="setScale('linear')">Linear</button>
               <button class="toggle-btn" data-scale="log" onclick="setScale('log')">Log₁₀</button>
             </div>
-          </div>
-        </div>
-
-        <!-- Cycle Slider -->
-        <div class="cycle-slider-section">
-          <div class="slider-header">
-            <label>Current Cycle</label>
-            <div class="cycle-display" id="cycleDisplay">1 <span>/ 40</span></div>
-          </div>
-          <input type="range" id="cycleSlider" min="1" max="40" value="1" step="1">
-
-          <!-- Cycle Stages -->
-          <div class="cycle-stages">
-            <div class="stage denature" id="stageDenature">
-              <div class="stage-temp">95 °C</div>
-              <div class="stage-name">Denature</div>
-              <div class="stage-desc">dsDNA → ssDNA</div>
-            </div>
-            <div class="stage anneal" id="stageAnneal">
-              <div class="stage-temp">60 °C</div>
-              <div class="stage-name">Anneal</div>
-              <div class="stage-desc">Primers bind</div>
-            </div>
-            <div class="stage extend" id="stageExtend">
-              <div class="stage-temp">72 °C</div>
-              <div class="stage-name">Extend</div>
-              <div class="stage-desc">Taq synthesis + SYBR binds dsDNA</div>
-            </div>
-          </div>
-
-          <!-- Playback -->
-          <div class="playback-controls">
-            <button class="play-btn" id="playBtn" onclick="togglePlay()">
-              <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-              <span id="playLabel">Play</span>
-            </button>
-            <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1×</button>
-            <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2×</button>
-            <button class="speed-btn" data-speed="5" onclick="setSpeed(5)">5×</button>
           </div>
         </div>
       </div>
