@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>qRT-PCR Simulation — SYBR Green Assay</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: #1a2233;
+    --bg-card-hover: #1e2a3f;
+    --border: #2a3a52;
+    --text-primary: #edf1f7;
+    --text-secondary: #b0bdd0;
+    --text-muted: #8494ad;
+    --accent-green: #39d98a;
+    --accent-green-dim: #1a7a4a;
+    --accent-green-glow: rgba(57, 217, 138, 0.15);
+    --accent-blue: #4da6ff;
+    --accent-blue-dim: #1a5a99;
+    --accent-orange: #ff8c42;
+    --accent-red: #ff5a5a;
+    --accent-yellow: #ffd23f;
+    --accent-purple: #b388ff;
+    --chart-bg: #0d1320;
+    --threshold-color: #ff5a5a;
+    --grid-color: rgba(42, 58, 82, 0.5);
+    --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    font-size: 15px;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  .app-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .header h1 span { color: var(--accent-green); }
+  .header-subtitle {
+    font-size: 15px; color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Main Layout */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Amplification Chart */
+  .chart-container {
+    position: relative;
+    background: var(--chart-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 420px;
+  }
+  .chart-canvas-wrap canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  .chart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(17, 24, 39, 0.6);
+    border-top: 1px solid var(--border);
+  }
+  .chart-controls label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Toggle Switch */
+  .toggle-group {
+    display: flex;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .toggle-btn {
+    padding: 6px 16px;
+    font-size: 14px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .toggle-btn.active {
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+  }
+
+  /* Cycle Slider */
+  .cycle-slider-section {
+    margin-top: 20px;
+  }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .slider-header label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .cycle-display {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent-green);
+  }
+  .cycle-display span {
+    font-size: 15px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-primary);
+    outline: none;
+    margin: 8px 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(57, 217, 138, 0.4);
+    transition: box-shadow 0.2s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 16px rgba(57, 217, 138, 0.6);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Cycle stages */
+  .cycle-stages {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+  }
+  .stage {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 8px;
+    text-align: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    transition: all 0.4s ease;
+  }
+  .stage.active {
+    border-color: transparent;
+  }
+  .stage.denature.active {
+    background: rgba(255, 90, 90, 0.12);
+    border-color: var(--accent-red);
+  }
+  .stage.anneal.active {
+    background: rgba(77, 166, 255, 0.12);
+    border-color: var(--accent-blue);
+  }
+  .stage.extend.active {
+    background: rgba(57, 217, 138, 0.12);
+    border-color: var(--accent-green);
+  }
+  .stage-temp {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .stage.denature .stage-temp { color: var(--accent-red); }
+  .stage.anneal .stage-temp { color: var(--accent-blue); }
+  .stage.extend .stage-temp { color: var(--accent-green); }
+  .stage-name {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .stage-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* Playback controls */
+  .playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+    border: 1px solid rgba(57, 217, 138, 0.3);
+    border-radius: 8px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .play-btn:hover {
+    background: rgba(57, 217, 138, 0.25);
+  }
+  .play-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+  .speed-btn {
+    padding: 6px 14px;
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .speed-btn.active {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue-dim);
+    background: rgba(77, 166, 255, 0.08);
+  }
+
+  /* Right Panel */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* Sample Legend */
+  .sample-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .sample-item {
+    display: grid;
+    grid-template-columns: 10px 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sample-item:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border);
+  }
+  .sample-item.dimmed {
+    opacity: 0.3;
+  }
+  .sample-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .sample-name {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .sample-conc {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .sample-ct {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    min-width: 60px;
+    text-align: right;
+  }
+
+  /* Standard Curve */
+  .std-curve-container {
+    position: relative;
+    background: var(--chart-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .std-curve-canvas-wrap {
+    position: relative;
+    width: 100%;
+    height: 240px;
+  }
+  .std-curve-canvas-wrap canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  .std-curve-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(17, 24, 39, 0.6);
+    border-top: 1px solid var(--border);
+  }
+  .stat-item {
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-green);
+  }
+
+  /* DNA Visualisation — Dual Panel */
+  .dna-vis-dual {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 12px;
+    min-height: 220px;
+  }
+  .dna-molecule-panel {
+    background: var(--chart-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .dna-molecule-header {
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(17, 24, 39, 0.5);
+  }
+  .dna-molecule-header strong {
+    color: var(--accent-green);
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+  .dna-molecule-count {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .dna-molecule-area {
+    flex: 1;
+    position: relative;
+    min-height: 150px;
+  }
+  .dna-molecule-area canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+  .dna-molecule-overflow {
+    position: absolute;
+    bottom: 8px; left: 0; right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+  .dna-molecule-legend {
+    padding: 6px 12px;
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    background: rgba(17, 24, 39, 0.5);
+  }
+  .dna-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dna-legend-swatch {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+  }
+
+  .dna-bar-panel {
+    background: var(--chart-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .dna-bar-header {
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    background: rgba(17, 24, 39, 0.5);
+  }
+  .dna-bar-area {
+    flex: 1;
+    position: relative;
+    min-height: 150px;
+  }
+  .dna-bar-area canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  @media (max-width: 800px) {
+    .dna-vis-dual {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Info boxes */
+  .info-box {
+    padding: 14px 16px;
+    background: rgba(57, 217, 138, 0.05);
+    border: 1px solid rgba(57, 217, 138, 0.15);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .info-box strong {
+    color: var(--accent-green);
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .main-grid {
+      grid-template-columns: 1fr;
+    }
+    .app-container {
+      padding: 16px;
+    }
+  }
+  @media (max-width: 600px) {
+    .cycle-stages {
+      flex-direction: column;
+    }
+    .chart-canvas-wrap {
+      height: 300px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🧬</div>
+    <div>
+      <h1>qRT-PCR <span>Simulation</span></h1>
+      <div class="header-subtitle">SYBR Green I Detection — Serial Dilution Series</div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+    <!-- Left Column -->
+    <div class="left-panel">
+      <!-- DNA Visualisation (FIRST — above the amplification plot) -->
+      <div class="card">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-blue);"></span>
+          Template Doubling Visualisation
+        </div>
+
+        <!-- Two-panel layout: molecule view + bar chart -->
+        <div class="dna-vis-dual">
+          <!-- Left: molecule schematic -->
+          <div class="dna-molecule-panel">
+            <div class="dna-molecule-header">
+              <span class="dna-molecule-label">dsDNA Molecules at Cycle <strong id="dnaCycleLabel">1</strong></span>
+              <span class="dna-molecule-count">= <strong id="dnaCount">1</strong> copies</span>
+            </div>
+            <div class="dna-molecule-area">
+              <canvas id="dnaCanvas"></canvas>
+              <div class="dna-molecule-overflow" id="dnaOverflow" style="display:none;">
+                <span id="dnaOverflowText"></span>
+              </div>
+            </div>
+            <div class="dna-molecule-legend">
+              <span class="dna-legend-item"><span class="dna-legend-swatch" style="background: #4da6ff;"></span><span class="dna-legend-swatch" style="background: #39d98a; margin-left:-4px;"></span> dsDNA</span>
+              <span class="dna-legend-item"><span class="dna-legend-swatch" style="background: rgba(57,217,138,0.35); border-radius:50%;"></span> SYBR Green</span>
+            </div>
+          </div>
+
+          <!-- Right: log-scale copy number bar chart across cycles -->
+          <div class="dna-bar-panel">
+            <div class="dna-bar-header">Copy Number per Cycle (log₁₀ scale)</div>
+            <div class="dna-bar-area">
+              <canvas id="dnaBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box" style="margin-top: 10px;">
+          Each cycle, template dsDNA approximately <strong>doubles</strong> (efficiency-dependent). At 95% efficiency, copies increase by a factor of 1.95× per cycle. <strong>SYBR Green I</strong> intercalates into dsDNA, fluorescing ~1000× brighter than when free in solution — so fluorescence is proportional to total dsDNA. The bar chart shows the exponential accumulation on a log₁₀ scale; notice each bar grows by a near-constant increment (log₁₀ 1.95 ≈ 0.29) until the plateau phase.
+        </div>
+      </div>
+
+      <!-- Amplification Plot (SECOND — below the doubling vis) -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-green);"></span>
+          Amplification Plot — Fluorescence vs Cycle
+        </div>
+        <div class="chart-container">
+          <div class="chart-canvas-wrap">
+            <canvas id="ampChart"></canvas>
+          </div>
+          <div class="chart-controls">
+            <label>Y-Axis Scale</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" data-scale="linear" onclick="setScale('linear')">Linear</button>
+              <button class="toggle-btn" data-scale="log" onclick="setScale('log')">Log₁₀</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cycle Slider -->
+        <div class="cycle-slider-section">
+          <div class="slider-header">
+            <label>Current Cycle</label>
+            <div class="cycle-display" id="cycleDisplay">1 <span>/ 40</span></div>
+          </div>
+          <input type="range" id="cycleSlider" min="1" max="40" value="1" step="1">
+
+          <!-- Cycle Stages -->
+          <div class="cycle-stages">
+            <div class="stage denature" id="stageDenature">
+              <div class="stage-temp">95 °C</div>
+              <div class="stage-name">Denature</div>
+              <div class="stage-desc">dsDNA → ssDNA</div>
+            </div>
+            <div class="stage anneal" id="stageAnneal">
+              <div class="stage-temp">60 °C</div>
+              <div class="stage-name">Anneal</div>
+              <div class="stage-desc">Primers bind</div>
+            </div>
+            <div class="stage extend" id="stageExtend">
+              <div class="stage-temp">72 °C</div>
+              <div class="stage-name">Extend</div>
+              <div class="stage-desc">Taq synthesis + SYBR binds dsDNA</div>
+            </div>
+          </div>
+
+          <!-- Playback -->
+          <div class="playback-controls">
+            <button class="play-btn" id="playBtn" onclick="togglePlay()">
+              <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              <span id="playLabel">Play</span>
+            </button>
+            <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1×</button>
+            <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2×</button>
+            <button class="speed-btn" data-speed="5" onclick="setSpeed(5)">5×</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-panel">
+      <!-- Samples -->
+      <div class="card">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-blue);"></span>
+          Dilution Series (10-fold)
+        </div>
+        <div class="sample-list" id="sampleList"></div>
+      </div>
+
+      <!-- Standard Curve -->
+      <div class="card">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-orange);"></span>
+          Standard Curve
+        </div>
+        <div class="std-curve-container">
+          <div class="std-curve-canvas-wrap">
+            <canvas id="stdCurveChart"></canvas>
+          </div>
+          <div class="std-curve-stats">
+            <div class="stat-item">
+              <div class="stat-label">Slope</div>
+              <div class="stat-value" id="statSlope">—</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">R²</div>
+              <div class="stat-value" id="statR2">—</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Efficiency</div>
+              <div class="stat-value" id="statEff">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="info-box" style="margin-top: 10px;">
+          PCR efficiency is calculated from the slope: <strong>E = 10<sup>(−1/slope)</sup> − 1</strong>. An ideal efficiency of 100% yields a slope of −3.32, meaning each 10-fold dilution shifts the C<sub>t</sub> by ~3.32 cycles.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// qRT-PCR SIMULATION ENGINE
+// Scientifically accurate model using SYBR Green I detection
+// ============================================================
+
+const TOTAL_CYCLES = 40;
+
+// Sample definitions: 10-fold dilution series
+const SAMPLES = [
+  { name: 'Sample 1', initCopies: 1e6,  color: '#39d98a' },
+  { name: 'Sample 2', initCopies: 1e5,  color: '#4da6ff' },
+  { name: 'Sample 3', initCopies: 1e4,  color: '#ffd23f' },
+  { name: 'Sample 4', initCopies: 1e3,  color: '#ff8c42' },
+  { name: 'Sample 5', initCopies: 1e2,  color: '#b388ff' },
+];
+
+// PCR parameters
+const PCR_EFFICIENCY = 0.95; // 95% efficiency — realistic for well-optimised assay
+const PLATEAU_COPIES = 1e12; // Plateau due to reagent depletion, enzyme saturation
+const BASELINE_NOISE_FRAC = 0.002; // Background fluorescence (fraction of plateau)
+const SYBR_PROPORTIONALITY = 1.0; // Fluorescence proportional to dsDNA mass
+
+let threshold = 0.1; // Normalised threshold (fraction of plateau fluorescence)
+let currentCycle = 1;
+let yAxisScale = 'linear'; // 'linear' or 'log'
+let isPlaying = false;
+let playSpeed = 1;
+let playInterval = null;
+let animStage = 0; // 0=denature, 1=anneal, 2=extend
+let animTimer = null;
+let sampleVisibility = [true, true, true, true, true];
+
+// ============================================================
+// FLUORESCENCE MODEL
+// ============================================================
+// Models amplification with logistic plateau, baseline noise,
+// and SYBR Green proportionality to dsDNA quantity
+
+function computeFluorescence(initCopies, cycle) {
+  // Amplification with efficiency and logistic plateau
+  const amplifiedCopies = initCopies * Math.pow(1 + PCR_EFFICIENCY, cycle);
+  // Logistic damping to simulate plateau
+  const effectiveCopies = PLATEAU_COPIES * amplifiedCopies / (PLATEAU_COPIES + amplifiedCopies);
+  // Normalised fluorescence [0..1]: proportional to dsDNA
+  const signal = effectiveCopies / PLATEAU_COPIES;
+  // Add baseline noise
+  const noise = BASELINE_NOISE_FRAC * (1 + 0.15 * Math.sin(cycle * 1.7 + initCopies * 0.001));
+  return Math.max(signal + noise, noise);
+}
+
+// Pre-compute all fluorescence curves
+function computeAllCurves() {
+  return SAMPLES.map(s => {
+    const curve = [];
+    for (let c = 0; c <= TOTAL_CYCLES; c++) {
+      curve.push(computeFluorescence(s.initCopies, c));
+    }
+    return curve;
+  });
+}
+
+const fluorescenceCurves = computeAllCurves();
+
+// Compute Ct value via linear interpolation
+function computeCt(curveIndex, thresh) {
+  const curve = fluorescenceCurves[curveIndex];
+  for (let c = 1; c <= TOTAL_CYCLES; c++) {
+    if (curve[c] >= thresh && curve[c - 1] < thresh) {
+      // Linear interpolation
+      const frac = (thresh - curve[c - 1]) / (curve[c] - curve[c - 1]);
+      return (c - 1) + frac;
+    }
+  }
+  return null; // Never crosses threshold
+}
+
+// ============================================================
+// CANVAS RENDERING — AMPLIFICATION CHART
+// ============================================================
+
+const ampCanvas = document.getElementById('ampChart');
+const ampCtx = ampCanvas.getContext('2d');
+
+const chartPadding = { top: 30, right: 30, bottom: 50, left: 70 };
+
+function resizeCanvas(canvas) {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w: rect.width, h: rect.height };
+}
+
+function drawAmpChart() {
+  const { w, h } = resizeCanvas(ampCanvas);
+  const ctx = ampCtx;
+  ctx.clearRect(0, 0, w, h);
+
+  const plotL = chartPadding.left;
+  const plotR = w - chartPadding.right;
+  const plotT = chartPadding.top;
+  const plotB = h - chartPadding.bottom;
+  const plotW = plotR - plotL;
+  const plotH = plotB - plotT;
+
+  // Y-axis range
+  let yMin, yMax, yToScreen, yTickVals, yTickLabels;
+
+  if (yAxisScale === 'log') {
+    yMin = -4; // 10^-4
+    yMax = 0.1; // slightly above 10^0
+    yToScreen = (v) => {
+      const logV = Math.log10(Math.max(v, 1e-5));
+      return plotB - ((logV - yMin) / (yMax - yMin)) * plotH;
+    };
+    yTickVals = [1e-4, 1e-3, 1e-2, 1e-1, 1];
+    yTickLabels = ['10⁻⁴', '10⁻³', '10⁻²', '10⁻¹', '10⁰'];
+  } else {
+    yMin = 0;
+    yMax = 1.05;
+    yToScreen = (v) => plotB - (v / yMax) * plotH;
+    yTickVals = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+    yTickLabels = ['0', '0.2', '0.4', '0.6', '0.8', '1.0'];
+  }
+
+  const xToScreen = (cycle) => plotL + (cycle / TOTAL_CYCLES) * plotW;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(42, 58, 82, 0.4)';
+  ctx.lineWidth = 0.5;
+  yTickVals.forEach(v => {
+    const y = yToScreen(v);
+    if (y >= plotT && y <= plotB) {
+      ctx.beginPath();
+      ctx.moveTo(plotL, y);
+      ctx.lineTo(plotR, y);
+      ctx.stroke();
+    }
+  });
+  for (let c = 0; c <= TOTAL_CYCLES; c += 5) {
+    const x = xToScreen(c);
+    ctx.beginPath();
+    ctx.moveTo(x, plotT);
+    ctx.lineTo(x, plotB);
+    ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(42, 58, 82, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(plotL, plotT);
+  ctx.lineTo(plotL, plotB);
+  ctx.lineTo(plotR, plotB);
+  ctx.stroke();
+
+  // Tick labels
+  ctx.font = '13px "JetBrains Mono"';
+  ctx.fillStyle = '#8494ad';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  yTickVals.forEach((v, i) => {
+    const y = yToScreen(v);
+    if (y >= plotT - 5 && y <= plotB + 5) {
+      ctx.fillText(yTickLabels[i], plotL - 8, y);
+    }
+  });
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let c = 0; c <= TOTAL_CYCLES; c += 5) {
+    ctx.fillText(c.toString(), xToScreen(c), plotB + 8);
+  }
+
+  // Axis labels
+  ctx.font = '14px "IBM Plex Sans"';
+  ctx.fillStyle = '#b0bdd0';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cycle Number', (plotL + plotR) / 2, plotB + 34);
+
+  ctx.save();
+  ctx.translate(16, (plotT + plotB) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.fillText(yAxisScale === 'log' ? 'Fluorescence (log₁₀ ΔRn)' : 'Fluorescence (ΔRn, normalised)', 0, 0);
+  ctx.restore();
+
+  // Threshold line
+  const threshY = yToScreen(threshold);
+  if (threshY >= plotT && threshY <= plotB) {
+    ctx.strokeStyle = 'rgba(255, 90, 90, 0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(plotL, threshY);
+    ctx.lineTo(plotR, threshY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = '13px "JetBrains Mono"';
+    ctx.fillStyle = '#ff5a5a';
+    ctx.textAlign = 'left';
+    ctx.fillText('Threshold', plotR - 70, threshY - 8);
+  }
+
+  // Current cycle indicator
+  if (currentCycle > 0 && currentCycle <= TOTAL_CYCLES) {
+    const cx = xToScreen(currentCycle);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(cx, plotT);
+    ctx.lineTo(cx, plotB);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Fluorescence curves (draw up to currentCycle)
+  SAMPLES.forEach((sample, idx) => {
+    if (!sampleVisibility[idx]) return;
+    const curve = fluorescenceCurves[idx];
+    ctx.strokeStyle = sample.color;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    let started = false;
+    for (let c = 0; c <= Math.min(currentCycle, TOTAL_CYCLES); c++) {
+      const x = xToScreen(c);
+      const y = yToScreen(curve[c]);
+      const yc = Math.max(plotT, Math.min(plotB, y));
+      if (!started) { ctx.moveTo(x, yc); started = true; }
+      else ctx.lineTo(x, yc);
+    }
+    ctx.stroke();
+
+    // Dot at current cycle
+    if (currentCycle > 0 && currentCycle <= TOTAL_CYCLES) {
+      const x = xToScreen(currentCycle);
+      const y = yToScreen(curve[currentCycle]);
+      const yc = Math.max(plotT, Math.min(plotB, y));
+      ctx.fillStyle = sample.color;
+      ctx.beginPath();
+      ctx.arc(x, yc, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Ct marker
+    const ct = computeCt(idx, threshold);
+    if (ct !== null && ct <= currentCycle) {
+      const cx = xToScreen(ct);
+      const cy = yToScreen(threshold);
+      const cyc = Math.max(plotT, Math.min(plotB, cy));
+      // Drop line
+      ctx.strokeStyle = sample.color + '55';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cyc);
+      ctx.lineTo(cx, plotB);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Diamond marker
+      ctx.fillStyle = sample.color;
+      ctx.beginPath();
+      ctx.moveTo(cx, cyc - 5);
+      ctx.lineTo(cx + 5, cyc);
+      ctx.lineTo(cx, cyc + 5);
+      ctx.lineTo(cx - 5, cyc);
+      ctx.closePath();
+      ctx.fill();
+    }
+  });
+}
+
+// ============================================================
+// STANDARD CURVE CHART
+// ============================================================
+
+const stdCanvas = document.getElementById('stdCurveChart');
+const stdCtx = stdCanvas.getContext('2d');
+
+function drawStdCurve() {
+  const { w, h } = resizeCanvas(stdCanvas);
+  const ctx = stdCtx;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { top: 24, right: 24, bottom: 44, left: 56 };
+  const pL = pad.left, pR = w - pad.right, pT = pad.top, pB = h - pad.bottom;
+  const pW = pR - pL, pH = pB - pT;
+
+  // Compute Ct values
+  const ctVals = SAMPLES.map((s, i) => ({
+    logConc: Math.log10(s.initCopies),
+    ct: computeCt(i, threshold),
+    color: s.color,
+    visible: sampleVisibility[i]
+  })).filter(d => d.ct !== null);
+
+  // Linear regression
+  let slope = 0, intercept = 0, r2 = 0;
+  const visibleCts = ctVals.filter(d => d.visible);
+  if (visibleCts.length >= 2) {
+    const n = visibleCts.length;
+    const sumX = visibleCts.reduce((a, d) => a + d.logConc, 0);
+    const sumY = visibleCts.reduce((a, d) => a + d.ct, 0);
+    const sumXY = visibleCts.reduce((a, d) => a + d.logConc * d.ct, 0);
+    const sumX2 = visibleCts.reduce((a, d) => a + d.logConc * d.logConc, 0);
+    slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    intercept = (sumY - slope * sumX) / n;
+    const meanY = sumY / n;
+    const ssTot = visibleCts.reduce((a, d) => a + (d.ct - meanY) ** 2, 0);
+    const ssRes = visibleCts.reduce((a, d) => a + (d.ct - (slope * d.logConc + intercept)) ** 2, 0);
+    r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+  }
+
+  // Update stats
+  document.getElementById('statSlope').textContent = slope ? slope.toFixed(2) : '—';
+  document.getElementById('statR2').textContent = r2 ? r2.toFixed(4) : '—';
+  const eff = slope ? (Math.pow(10, -1 / slope) - 1) * 100 : 0;
+  document.getElementById('statEff').textContent = eff ? eff.toFixed(1) + '%' : '—';
+
+  // Axis ranges
+  const xMin = 1.5, xMax = 6.5; // log10 copies
+  const ctAllVisible = visibleCts.map(d => d.ct);
+  const yMinRaw = ctAllVisible.length ? Math.min(...ctAllVisible) - 3 : 5;
+  const yMaxRaw = ctAllVisible.length ? Math.max(...ctAllVisible) + 3 : 35;
+  const yMin = Math.max(0, Math.floor(yMinRaw / 5) * 5);
+  const yMax = Math.ceil(yMaxRaw / 5) * 5;
+
+  const xToS = v => pL + ((v - xMin) / (xMax - xMin)) * pW;
+  const yToS = v => pB - ((v - yMin) / (yMax - yMin)) * pH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(42, 58, 82, 0.4)';
+  ctx.lineWidth = 0.5;
+  for (let y = yMin; y <= yMax; y += 5) {
+    ctx.beginPath(); ctx.moveTo(pL, yToS(y)); ctx.lineTo(pR, yToS(y)); ctx.stroke();
+  }
+  for (let x = 2; x <= 6; x++) {
+    ctx.beginPath(); ctx.moveTo(xToS(x), pT); ctx.lineTo(xToS(x), pB); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(42, 58, 82, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pL, pT); ctx.lineTo(pL, pB); ctx.lineTo(pR, pB);
+  ctx.stroke();
+
+  // Labels
+  ctx.font = '12px "JetBrains Mono"';
+  ctx.fillStyle = '#8494ad';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let x = 2; x <= 6; x++) {
+    ctx.fillText('10' + superscript(x), xToS(x), pB + 6);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let y = yMin; y <= yMax; y += 5) {
+    ctx.fillText(y.toString(), pL - 6, yToS(y));
+  }
+
+  // Axis labels
+  ctx.font = '13px "IBM Plex Sans"';
+  ctx.fillStyle = '#b0bdd0';
+  ctx.textAlign = 'center';
+  ctx.fillText('Initial Copy Number (log₁₀)', (pL + pR) / 2, pB + 28);
+  ctx.save();
+  ctx.translate(12, (pT + pB) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Ct Value', 0, 0);
+  ctx.restore();
+
+  // Regression line
+  if (visibleCts.length >= 2) {
+    ctx.strokeStyle = 'rgba(255, 140, 66, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    const x1 = xMin, x2 = xMax;
+    ctx.beginPath();
+    ctx.moveTo(xToS(x1), yToS(slope * x1 + intercept));
+    ctx.lineTo(xToS(x2), yToS(slope * x2 + intercept));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Data points
+  ctVals.forEach(d => {
+    if (!d.visible) return;
+    const x = xToS(d.logConc);
+    const y = yToS(d.ct);
+    ctx.fillStyle = d.color;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+}
+
+function superscript(n) {
+  const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶' };
+  return String(n).split('').map(c => sup[c] || c).join('');
+}
+
+// ============================================================
+// DNA VISUALISATION — MOLECULE VIEW + BAR CHART
+// ============================================================
+
+const dnaCanvas = document.getElementById('dnaCanvas');
+const dnaCtx = dnaCanvas.getContext('2d');
+const dnaBarCanvas = document.getElementById('dnaBarChart');
+const dnaBarCtx = dnaBarCanvas.getContext('2d');
+
+// Pre-compute copy numbers per cycle for Sample 1 (used in vis)
+function getCopiesAtCycle(cycle) {
+  const raw = SAMPLES[0].initCopies * Math.pow(1 + PCR_EFFICIENCY, cycle);
+  // Apply same logistic plateau as fluorescence model
+  return PLATEAU_COPIES * raw / (PLATEAU_COPIES + raw);
+}
+
+// Map the real copy count to a displayable molecule count (0..MAX_MOLECULES)
+// We use a log mapping so early doublings are clearly visible:
+// cycle 0 → ~1 molecule shown, each doubling adds visible molecules,
+// and the panel fills to MAX at high cycle numbers.
+const MAX_MOLECULES = 120;
+
+function getMoleculeDisplayCount(cycle) {
+  if (cycle <= 0) return 0;
+  const copies = getCopiesAtCycle(cycle);
+  const copiesAtZero = getCopiesAtCycle(0);
+  const copiesAtMax = getCopiesAtCycle(TOTAL_CYCLES);
+  // Log-scale mapping so early doublings are prominent
+  const logMin = Math.log10(Math.max(copiesAtZero, 1));
+  const logMax = Math.log10(copiesAtMax);
+  const logCur = Math.log10(Math.max(copies, 1));
+  const frac = Math.max(0, Math.min(1, (logCur - logMin) / (logMax - logMin)));
+  return Math.max(1, Math.round(frac * MAX_MOLECULES));
+}
+
+// Pre-generate stable grid positions for molecules.
+// Uses a tidy grid layout so the doubling is visually countable.
+let cachedPositions = null;
+let cachedW = 0, cachedH = 0;
+
+function getMoleculePositions(w, h) {
+  if (cachedPositions && cachedW === w && cachedH === h) return cachedPositions;
+
+  const padX = 14, padY = 10;
+  const usableW = w - padX * 2;
+  const usableH = h - padY * 2;
+
+  // Calculate grid dimensions that fit MAX_MOLECULES nicely
+  const aspect = usableW / usableH;
+  let cols = Math.round(Math.sqrt(MAX_MOLECULES * aspect));
+  let rows = Math.ceil(MAX_MOLECULES / cols);
+
+  // Ensure we don't overflow vertically
+  while (rows * 14 > usableH && cols < MAX_MOLECULES) {
+    cols++;
+    rows = Math.ceil(MAX_MOLECULES / cols);
+  }
+
+  const cellW = usableW / cols;
+  const cellH = usableH / rows;
+
+  const positions = [];
+  for (let i = 0; i < MAX_MOLECULES; i++) {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    positions.push({
+      x: padX + col * cellW + cellW / 2,
+      y: padY + row * cellH + cellH / 2
+    });
+  }
+
+  cachedPositions = positions;
+  cachedW = w;
+  cachedH = h;
+  return positions;
+}
+
+function drawDnaVis() {
+  // === Molecule Panel ===
+  const { w, h } = resizeCanvas(dnaCanvas);
+  const ctx = dnaCtx;
+  ctx.clearRect(0, 0, w, h);
+
+  const copies = currentCycle > 0 ? getCopiesAtCycle(currentCycle) : SAMPLES[0].initCopies;
+  const copyInt = Math.round(copies);
+  const showCount = currentCycle > 0 ? getMoleculeDisplayCount(currentCycle) : 0;
+
+  document.getElementById('dnaCycleLabel').textContent = currentCycle;
+  document.getElementById('dnaCount').textContent = copyInt > 1e6 ? copies.toExponential(2) : copyInt.toLocaleString();
+
+  // Show overflow indicator when capped
+  const overflowEl = document.getElementById('dnaOverflow');
+  const overflowTextEl = document.getElementById('dnaOverflowText');
+  if (showCount >= MAX_MOLECULES && copyInt > MAX_MOLECULES) {
+    overflowEl.style.display = 'block';
+    overflowTextEl.textContent = `Panel full — actual count: ${copyInt > 1e6 ? copies.toExponential(1) : copyInt.toLocaleString()} copies`;
+  } else if (showCount > 0) {
+    overflowEl.style.display = 'none';
+  } else {
+    overflowEl.style.display = 'none';
+  }
+
+  // Get grid positions
+  const positions = getMoleculePositions(w, h);
+
+  // Draw empty grid slots (faint placeholders) so students see the space filling
+  for (let i = 0; i < MAX_MOLECULES; i++) {
+    const pos = positions[i];
+    ctx.fillStyle = 'rgba(42, 58, 82, 0.15)';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Draw actual molecules — only up to showCount
+  for (let i = 0; i < showCount; i++) {
+    const pos = positions[i];
+    const mx = pos.x;
+    const my = pos.y;
+
+    // SYBR Green glow behind the dsDNA
+    ctx.fillStyle = 'rgba(57, 217, 138, 0.18)';
+    ctx.beginPath();
+    ctx.arc(mx, my, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Two strands (sense + antisense)
+    const halfH = 5;
+    const gap = 2.5;
+
+    ctx.strokeStyle = '#4da6ff';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(mx - gap / 2, my - halfH);
+    ctx.lineTo(mx - gap / 2, my + halfH);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#39d98a';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(mx + gap / 2, my - halfH);
+    ctx.lineTo(mx + gap / 2, my + halfH);
+    ctx.stroke();
+
+    // Base-pair rungs
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 0.7;
+    for (let r = -3; r <= 3; r += 3) {
+      ctx.beginPath();
+      ctx.moveTo(mx - gap / 2, my + r);
+      ctx.lineTo(mx + gap / 2, my + r);
+      ctx.stroke();
+    }
+  }
+
+  // Cycle 0 state
+  if (currentCycle === 0 || showCount === 0) {
+    ctx.fillStyle = '#8494ad';
+    ctx.font = '14px "IBM Plex Sans"';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Move the cycle slider to begin', w / 2, h / 2);
+  }
+
+  // === Bar Chart Panel ===
+  drawDnaBarChart();
+}
+
+function drawDnaBarChart() {
+  const { w, h } = resizeCanvas(dnaBarCanvas);
+  const ctx = dnaBarCtx;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { top: 16, right: 16, bottom: 32, left: 48 };
+  const pL = pad.left, pR = w - pad.right, pT = pad.top, pB = h - pad.bottom;
+  const plotW = pR - pL, plotH = pB - pT;
+
+  // Y-axis: log10 of copy number
+  // Compute max log value across all cycles for Sample 1
+  const logCopies = [];
+  for (let c = 0; c <= TOTAL_CYCLES; c++) {
+    logCopies.push(Math.log10(Math.max(getCopiesAtCycle(c), 1)));
+  }
+  const yMax = Math.ceil(Math.max(...logCopies));
+  const yMin = 0;
+
+  const yToS = v => pB - ((v - yMin) / (yMax - yMin)) * plotH;
+  const barW = plotW / TOTAL_CYCLES;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(42, 58, 82, 0.35)';
+  ctx.lineWidth = 0.5;
+  for (let y = yMin; y <= yMax; y += 2) {
+    const sy = yToS(y);
+    ctx.beginPath();
+    ctx.moveTo(pL, sy);
+    ctx.lineTo(pR, sy);
+    ctx.stroke();
+  }
+
+  // Y-axis labels
+  ctx.font = '11px "JetBrains Mono"';
+  ctx.fillStyle = '#8494ad';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let y = yMin; y <= yMax; y += 2) {
+    ctx.fillText('10' + superscript(y), pL - 4, yToS(y));
+  }
+
+  // X-axis labels (every 10 cycles)
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let c = 0; c <= TOTAL_CYCLES; c += 10) {
+    const x = pL + (c / TOTAL_CYCLES) * plotW + barW / 2;
+    ctx.fillText(c.toString(), x, pB + 4);
+  }
+
+  // Axis label
+  ctx.font = '12px "IBM Plex Sans"';
+  ctx.fillStyle = '#b0bdd0';
+  ctx.textAlign = 'center';
+  ctx.fillText('Cycle', (pL + pR) / 2, pB + 18);
+
+  // Y label
+  ctx.save();
+  ctx.translate(10, (pT + pB) / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Copies (log₁₀)', 0, 0);
+  ctx.restore();
+
+  // Bars
+  for (let c = 1; c <= TOTAL_CYCLES; c++) {
+    const logVal = logCopies[c];
+    const barH = ((logVal - yMin) / (yMax - yMin)) * plotH;
+    const x = pL + ((c - 1) / TOTAL_CYCLES) * plotW;
+    const y = pB - barH;
+
+    // Colour: green intensity proportional to fluorescence (SYBR signal)
+    const fluorFrac = fluorescenceCurves[0][c]; // normalised 0..1
+    const isFuture = c > currentCycle;
+
+    if (isFuture) {
+      // Future cycles: dim outline only
+      ctx.fillStyle = 'rgba(42, 58, 82, 0.25)';
+      ctx.fillRect(x + 1, y, Math.max(barW - 2, 1), barH);
+    } else {
+      // Past / current cycles: SYBR green intensity
+      const r = Math.round(30 + (57 - 30) * fluorFrac);
+      const g = Math.round(80 + (217 - 80) * fluorFrac);
+      const b = Math.round(60 + (138 - 60) * fluorFrac);
+      const alpha = 0.5 + 0.5 * fluorFrac;
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      ctx.fillRect(x + 1, y, Math.max(barW - 2, 1), barH);
+
+      // Highlight current cycle
+      if (c === currentCycle) {
+        ctx.strokeStyle = '#39d98a';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x + 0.5, y - 0.5, Math.max(barW - 1, 2), barH + 1);
+      }
+    }
+  }
+
+  // Doubling annotation: show arrow between previous and current bar
+  if (currentCycle >= 2 && currentCycle <= 25) {
+    const prevLog = logCopies[currentCycle - 1];
+    const currLog = logCopies[currentCycle];
+    const diff = currLog - prevLog;
+
+    const prevX = pL + ((currentCycle - 2) / TOTAL_CYCLES) * plotW + barW / 2;
+    const currX = pL + ((currentCycle - 1) / TOTAL_CYCLES) * plotW + barW / 2;
+    const prevY = yToS(prevLog);
+    const currY = yToS(currLog);
+
+    // Small bracket showing the increase
+    const midX = (prevX + currX) / 2;
+    const topY = Math.min(prevY, currY) - 12;
+
+    ctx.strokeStyle = 'rgba(255, 210, 63, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(prevX, prevY - 2);
+    ctx.lineTo(prevX, topY);
+    ctx.lineTo(currX, topY);
+    ctx.lineTo(currX, currY - 2);
+    ctx.stroke();
+
+    // Arrow head
+    ctx.fillStyle = 'rgba(255, 210, 63, 0.6)';
+    ctx.beginPath();
+    ctx.moveTo(currX - 3, currY - 6);
+    ctx.lineTo(currX + 3, currY - 6);
+    ctx.lineTo(currX, currY - 2);
+    ctx.closePath();
+    ctx.fill();
+
+    // Label
+    ctx.font = '11px "JetBrains Mono"';
+    ctx.fillStyle = '#ffd23f';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('×1.95', midX, topY - 2);
+  }
+
+  // Plateau annotation
+  if (currentCycle >= 30) {
+    const plateauStartCycle = 28;
+    const plateauX = pL + ((plateauStartCycle - 1) / TOTAL_CYCLES) * plotW;
+    ctx.fillStyle = 'rgba(255, 140, 66, 0.7)';
+    ctx.font = '11px "IBM Plex Sans"';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('← Plateau (reagent depletion)', plateauX, pT + 2);
+  }
+}
+
+// ============================================================
+// SAMPLE LIST UI
+// ============================================================
+
+function buildSampleList() {
+  const container = document.getElementById('sampleList');
+  container.innerHTML = '';
+  SAMPLES.forEach((s, i) => {
+    const ct = computeCt(i, threshold);
+    const ctStr = ct !== null && ct <= currentCycle ? 'Ct ' + ct.toFixed(1) : ct !== null ? 'Ct —' : 'N/A';
+    const div = document.createElement('div');
+    div.className = 'sample-item' + (sampleVisibility[i] ? '' : ' dimmed');
+    div.innerHTML = `
+      <div class="sample-dot" style="background: ${s.color};"></div>
+      <div class="sample-name">${s.name}</div>
+      <div class="sample-conc">${s.initCopies.toExponential(0)} copies</div>
+      <div class="sample-ct" style="color: ${ct !== null && ct <= currentCycle ? s.color : 'var(--text-muted)'};">${ctStr}</div>
+    `;
+    div.addEventListener('click', () => {
+      sampleVisibility[i] = !sampleVisibility[i];
+      updateAll();
+    });
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+
+function setScale(scale) {
+  yAxisScale = scale;
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.scale === scale);
+  });
+  drawAmpChart();
+}
+
+function setSpeed(speed) {
+  playSpeed = speed;
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
+  });
+  if (isPlaying) {
+    clearInterval(playInterval);
+    startPlayback();
+  }
+}
+
+function togglePlay() {
+  if (isPlaying) {
+    stopPlayback();
+  } else {
+    if (currentCycle >= TOTAL_CYCLES) {
+      currentCycle = 0;
+      document.getElementById('cycleSlider').value = 0;
+    }
+    startPlayback();
+  }
+}
+
+function startPlayback() {
+  isPlaying = true;
+  document.getElementById('playLabel').textContent = 'Pause';
+  document.getElementById('playIcon').innerHTML = '<rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/>';
+
+  const baseDelay = 800;
+  const stageDelay = baseDelay / (playSpeed * 3);
+
+  playInterval = setInterval(() => {
+    animStage = (animStage + 1) % 3;
+    updateStageHighlight();
+    drawDnaVis();
+
+    if (animStage === 0) {
+      currentCycle++;
+      if (currentCycle > TOTAL_CYCLES) {
+        currentCycle = TOTAL_CYCLES;
+        stopPlayback();
+        return;
+      }
+      document.getElementById('cycleSlider').value = currentCycle;
+      updateAll();
+    }
+  }, stageDelay);
+}
+
+function stopPlayback() {
+  isPlaying = false;
+  clearInterval(playInterval);
+  document.getElementById('playLabel').textContent = 'Play';
+  document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+}
+
+function updateStageHighlight() {
+  document.getElementById('stageDenature').classList.toggle('active', animStage === 0);
+  document.getElementById('stageAnneal').classList.toggle('active', animStage === 1);
+  document.getElementById('stageExtend').classList.toggle('active', animStage === 2);
+}
+
+function updateAll() {
+  document.getElementById('cycleDisplay').innerHTML = currentCycle + ' <span>/ 40</span>';
+  drawAmpChart();
+  drawStdCurve();
+  buildSampleList();
+  drawDnaVis();
+}
+
+// Slider events
+document.getElementById('cycleSlider').addEventListener('input', function () {
+  currentCycle = parseInt(this.value);
+  animStage = 2; // Show extension by default when scrubbing
+  updateStageHighlight();
+  updateAll();
+});
+
+// Resize handling
+window.addEventListener('resize', () => {
+  cachedPositions = null; // Invalidate molecule grid positions
+  updateAll();
+});
+
+// ============================================================
+// INITIALISE
+// ============================================================
+
+animStage = 2;
+updateStageHighlight();
+currentCycle = 1;
+document.getElementById('cycleSlider').value = 1;
+updateAll();
+</script>
+</body>
+</html>
