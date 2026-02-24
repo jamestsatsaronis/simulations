@@ -611,11 +611,31 @@
         </div>
       </div>
 
+<!-- Amplification Plot -->
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-title">
+          <span class="dot" style="background: var(--accent-green);"></span>
+          Amplification Plot — Fluorescence vs Cycle
+        </div>
+        <div class="chart-container">
+          <div class="chart-canvas-wrap">
+            <canvas id="ampChart"></canvas>
+          </div>
+          <div class="chart-controls">
+            <label>Y-Axis Scale</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" data-scale="linear" onclick="setScale('linear')">Linear</button>
+              <button class="toggle-btn" data-scale="log" onclick="setScale('log')">Log₁₀</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- DNA Visualisation -->
       <div class="card" style="margin-top: 20px;">
         <div class="card-title">
           <span class="dot" style="background: var(--accent-blue);"></span>
-          Template Doubling Visualisation
+          Template Visualisation
         </div>
 
         <!-- Two-panel layout: molecule view + bar chart -->
@@ -650,27 +670,7 @@
         <div class="info-box" style="margin-top: 10px;">
           Each cycle, template dsDNA approximately <strong>doubles</strong> (efficiency-dependent). At 95% efficiency, copies increase by a factor of 1.95× per cycle. <strong>SYBR Green I</strong> intercalates into dsDNA, fluorescing ~1000× brighter than when free in solution — so fluorescence is proportional to total dsDNA. The bar chart shows the exponential accumulation on a log₁₀ scale; notice each bar grows by a near-constant increment (log₁₀ 1.95 ≈ 0.29) until the plateau phase.
         </div>
-      </div>
-
-      <!-- Amplification Plot -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-green);"></span>
-          Amplification Plot — Fluorescence vs Cycle
-        </div>
-        <div class="chart-container">
-          <div class="chart-canvas-wrap">
-            <canvas id="ampChart"></canvas>
-          </div>
-          <div class="chart-controls">
-            <label>Y-Axis Scale</label>
-            <div class="toggle-group">
-              <button class="toggle-btn active" data-scale="linear" onclick="setScale('linear')">Linear</button>
-              <button class="toggle-btn" data-scale="log" onclick="setScale('log')">Log₁₀</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </div>     
     </div>
 
     <!-- Right Column -->
