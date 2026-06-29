@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charge at pH — amino acid &amp; peptide practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    --series1:#1d4ed8; --series2:#a8420a; --series3:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
+
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:65ch;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--surface-2);border:1px solid var(--border);
+         border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:1rem;margin:0 0 14px;font-weight:700;}
+
+  .control{margin-bottom:22px;}
+  .control:last-child{margin-bottom:0;}
+  .control>label{display:block;font-weight:600;margin-bottom:8px;font-size:.95rem;}
+  .readout{font-variant-numeric:tabular-nums;color:var(--ink-muted);font-weight:400;}
+
+  .step-row{display:flex;align-items:center;gap:10px;}
+  .stepbtn{appearance:none;border:2px solid var(--border);background:var(--surface);
+    color:var(--ink);font:inherit;font-size:1.4rem;font-weight:700;line-height:1;
+    width:44px;height:44px;border-radius:var(--radius);cursor:pointer;flex:none;}
+  .stepbtn:hover{border-color:var(--accent);}
+  .charge-field{width:104px;height:44px;text-align:center;font:inherit;font-weight:700;
+    font-size:1.3rem;font-variant-numeric:tabular-nums;border:2px solid var(--border);
+    border-radius:var(--radius);background:var(--surface);color:var(--ink);-moz-appearance:textfield;}
+  .charge-field::-webkit-outer-spin-button,.charge-field::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+  fieldset{border:0;margin:0;padding:0;}
+  legend{font-weight:600;margin-bottom:8px;font-size:.95rem;padding:0;}
+  .radios{display:flex;flex-wrap:wrap;gap:8px;}
+  .radio{display:flex;align-items:center;gap:9px;border:2px solid var(--border);
+    background:var(--surface);border-radius:var(--radius);padding:9px 12px;
+    cursor:pointer;min-height:44px;font-size:.95rem;}
+  .radio:hover{border-color:var(--accent);}
+  .radio input{width:20px;height:20px;accent-color:var(--accent);flex:none;}
+  .radio.checked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{appearance:none;font:inherit;font-weight:600;min-height:44px;padding:0 18px;
+    border-radius:var(--radius);cursor:pointer;border:2px solid var(--accent);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn:hover{filter:brightness(.96);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;filter:none;}
+
+  button:focus-visible,input:focus-visible,.radio:focus-within{outline:3px solid var(--focus);outline-offset:2px;}
+
+  .aa-name{font-size:1.5rem;font-weight:700;line-height:1.15;margin:0;}
+  .aa-meta{color:var(--ink-muted);font-size:.95rem;margin:6px 0 0;font-variant-numeric:tabular-nums;}
+  .pep{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;}
+  .res{display:flex;flex-direction:column;align-items:center;gap:3px;
+    background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);
+    padding:9px 8px 7px;min-width:52px;}
+  .res.ion{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+  .res .one{font-weight:700;font-size:1.4rem;line-height:1;}
+  .res .thr{font-size:.72rem;color:var(--ink-muted);}
+  .pep-seq{color:var(--ink-muted);font-size:.95rem;margin:12px 0 0;}
+  .pep-seq strong{color:var(--ink);}
+
+  .ph{margin-top:20px;}
+  .ph-val{font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+  .ph-val .u{font-size:1rem;font-weight:600;color:var(--ink-muted);margin-right:6px;}
+  .ph-track{position:relative;height:10px;margin-top:12px;border-radius:var(--radius);
+    background:var(--surface-2);border:1px solid var(--border);}
+  .ph-mark{position:absolute;top:50%;width:16px;height:16px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--surface);transform:translate(-50%,-50%);}
+  .ph-ticks{display:flex;justify-content:space-between;margin-top:5px;font-size:.78rem;
+    color:var(--ink-muted);font-variant-numeric:tabular-nums;}
+
+  .scores{display:flex;gap:10px;}
+  .score{flex:1;text-align:center;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px 6px;}
+  .score .n{font-size:1.4rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;}
+  .score .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-muted);margin-top:4px;}
+
+  .result-box{padding:14px 16px;border-radius:var(--radius);font-size:1rem;
+    background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));}
+  .result-box.ok{background:color-mix(in srgb,var(--series1) 10%,var(--surface));
+    border-color:color-mix(in srgb,var(--series1) 40%,var(--border));}
+  .result-box.no{background:color-mix(in srgb,var(--series2) 10%,var(--surface));
+    border-color:color-mix(in srgb,var(--series2) 40%,var(--border));}
+  .result-box .mark{font-weight:700;}
+  .result-box.ok .mark{color:var(--series1);}
+  .result-box.no .mark{color:var(--series2);}
+
+  .work{margin-top:22px;}
+  .work[hidden]{display:none;}
+  .work h3{font-size:.95rem;font-weight:700;margin:0 0 10px;}
+  table.break{width:100%;border-collapse:collapse;font-size:.92rem;}
+  table.break caption{text-align:left;color:var(--ink-muted);font-size:.85rem;margin-bottom:8px;}
+  table.break th,table.break td{border:1px solid var(--border);padding:7px 10px;text-align:left;
+    vertical-align:top;font-variant-numeric:tabular-nums;}
+  table.break th{background:var(--surface);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;font-weight:700;}
+  table.break td.num,table.break th.num{text-align:right;white-space:nowrap;}
+  table.break .sub{color:var(--ink-muted);font-size:.82rem;}
+  .chip{font-weight:700;border-radius:var(--radius);padding:2px 8px;display:inline-block;
+    min-width:40px;text-align:center;font-variant-numeric:tabular-nums;}
+  .chip.p{background:color-mix(in srgb,var(--series1) 14%,var(--surface));color:var(--series1);}
+  .chip.n{background:color-mix(in srgb,var(--series2) 14%,var(--surface));color:var(--series2);}
+  .chip.z{background:var(--surface-2);color:var(--ink-muted);}
+  tr.net td{border-top:2px solid var(--ink);font-weight:700;background:var(--surface);}
+  .exact{margin-top:14px;font-size:.9rem;color:var(--ink-muted);font-variant-numeric:tabular-nums;}
+  .exact strong{color:var(--ink);}
+
+  details.ref{margin-top:24px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+  details.ref>summary{cursor:pointer;padding:14px 18px;font-weight:700;font-size:.95rem;}
+  .ref-body{padding:0 18px 18px;}
+  .ref-body p{color:var(--ink-muted);font-size:.9rem;max-width:70ch;}
+  table.pka{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:6px;}
+  table.pka th,table.pka td{border:1px solid var(--border);padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums;}
+  table.pka th{background:var(--surface-2);font-size:.78rem;text-transform:uppercase;letter-spacing:.03em;}
+  .tag{font-size:.78rem;font-weight:700;border-radius:var(--radius);padding:1px 8px;}
+  .tag.acid{background:color-mix(in srgb,var(--series2) 14%,var(--surface));color:var(--series2);}
+  .tag.base{background:color-mix(in srgb,var(--series1) 14%,var(--surface));color:var(--series1);}
+
+  .note{margin-top:10px;font-size:.82rem;color:var(--ink-muted);}
+  footer{max-width:1040px;margin:18px auto 0;padding:0 20px;color:var(--ink-muted);font-size:.82rem;line-height:1.6;}
+  footer code{background:var(--surface-2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:.95em;}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.001ms !important;animation-duration:.001ms !important;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sim">
+    <div class="sim-head">
+      <h1>Charge at pH</h1>
+      <p>Work out the net charge on an amino acid or short peptide at the pH shown. Decide each ionisable group's state by comparing the pH with its pKa, assign +1, 0 or &minus;1 (and an average of &plusmn;&frac12; when pH equals the pKa), then add them up. Check your answer for a full group-by-group solution.</p>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2>Specimen</h2>
+          <div id="molecule"></div>
+          <p class="vh" id="specAlt"></p>
+          <div class="ph">
+            <div class="ph-val"><span class="u">pH</span><span id="phVal">—</span></div>
+            <div class="ph-track" aria-hidden="true"><div class="ph-mark" id="phMark" style="left:50%"></div></div>
+            <div class="ph-ticks" aria-hidden="true"><span>0</span><span>7</span><span>14</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Your answer</h2>
+
+          <div class="control">
+            <fieldset>
+              <legend>Difficulty</legend>
+              <div class="radios" id="diffGroup">
+                <label class="radio"><input type="radio" name="diff" value="easy"> Single · simple</label>
+                <label class="radio"><input type="radio" name="diff" value="medium"> Single · all</label>
+                <label class="radio"><input type="radio" name="diff" value="hard"> Peptides</label>
+                <label class="radio checked"><input type="radio" name="diff" value="mixed" checked> Mixed</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="control">
+            <div class="radios">
+              <label class="radio checked" id="edgeLabel"><input type="checkbox" id="edgeToggle" checked> Include pH = pKa (half-charge) cases</label>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="charge">Net charge <span class="readout">(elementary charges, e &middot; steps of &frac12;)</span></label>
+            <div class="step-row">
+              <button type="button" class="stepbtn" id="dec" aria-label="Decrease net charge by one half">&minus;</button>
+              <input class="charge-field" id="charge" type="number" value="0" step="0.5" min="-7" max="7"
+                     inputmode="decimal" aria-describedby="chargeHint">
+              <button type="button" class="stepbtn" id="inc" aria-label="Increase net charge by one half">+</button>
+            </div>
+            <p class="vh" id="chargeHint">Use the plus and minus buttons or the up and down arrow keys to set your answer in steps of one half, without dragging. Press Enter to check.</p>
+          </div>
+
+          <div class="btnrow">
+            <button type="button" class="btn btn-primary" id="checkBtn">Check answer</button>
+            <button type="button" class="btn btn-ghost" id="hintBtn">Show hint</button>
+          </div>
+          <p class="note" id="hint" hidden></p>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>Score</h2>
+          <div class="scores" role="status" aria-live="polite">
+            <div class="score"><div class="n" id="stStreak">0</div><div class="k">Streak</div></div>
+            <div class="score"><div class="n" id="stSolved">0</div><div class="k">Solved</div></div>
+            <div class="score"><div class="n" id="stAcc">—</div><div class="k">Accuracy</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Result</h2>
+          <div class="result-box" id="result" role="status" aria-live="polite">
+            Set your net charge on the left, then select <strong>Check answer</strong>.
+          </div>
+
+          <div class="work" id="work" hidden>
+            <h3>Worked solution</h3>
+            <table class="break">
+              <caption>Each ionisable group, its state at this pH, and the charge it contributes.</caption>
+              <thead>
+                <tr><th scope="col">Ionisable group</th><th scope="col" class="num">pKa</th>
+                    <th scope="col">State at this pH</th><th scope="col" class="num">Charge</th></tr>
+              </thead>
+              <tbody id="breakBody"></tbody>
+            </table>
+            <p class="exact" id="exact"></p>
+            <div class="btnrow" style="margin-top:18px;">
+              <button type="button" class="btn btn-primary" id="nextBtn">Next specimen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <details class="ref">
+    <summary>pKa reference &amp; method</summary>
+    <div class="ref-body">
+      <p>An <span class="tag acid">acidic</span> group (loses H⁺) carries &minus;1 when pH &gt; pKa and 0 when pH &lt; pKa. A <span class="tag base">basic</span> group (gains H⁺) carries +1 when pH &lt; pKa and 0 when pH &gt; pKa. At pH = pKa the group sits at its midpoint: [HA] = [A⁻], so at any instant it is ionised in half the molecules and neutral in the other half. Charge is quantised — a single group is always either fully charged or fully neutral, never literally fractional — so the &plusmn;&frac12; we use is the <em>average</em> charge across the population (equivalently, the time-average for one molecule that exchanges its proton rapidly). Net charge is the sum across every ionisable group; in a peptide only the two termini and the side chains ionise.</p>
+      <table class="pka" id="pkaTable">
+        <thead><tr><th scope="col">Group</th><th scope="col">Type</th><th scope="col">pKa</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p id="refNote"></p>
+    </div>
+  </details>
+  <p>With the half-charge option on, some pH values are set exactly to a pKa, where that group is ionised in half the molecules, so on average it contributes &plusmn;&frac12;; every other group is still kept at least 1 unit from its pKa, so only that one group is fractional. With the option off, all pH values stay at least 1 unit from every pKa and answers are whole numbers. The exact line uses the Henderson–Hasselbalch equation. pKa values are teaching values close to Lehninger; terminal α-groups use a single generic value for consistency. To match your course, edit the <code>ALPHA_COOH</code>, <code>ALPHA_NH3</code> and <code>AA</code> constants near the top of the script.</p>
+</footer>
+
+<script>
+"use strict";
+/* ============ editable constants ============ */
+const ALPHA_COOH = 2.3;
+const ALPHA_NH3  = 9.6;
+const AA = {
+  A:{name:"Alanine",three:"Ala"}, R:{name:"Arginine",three:"Arg",sc:"basic",pKa:12.5},
+  N:{name:"Asparagine",three:"Asn"}, D:{name:"Aspartate",three:"Asp",sc:"acidic",pKa:3.65},
+  C:{name:"Cysteine",three:"Cys",sc:"acidic",pKa:8.3}, E:{name:"Glutamate",three:"Glu",sc:"acidic",pKa:4.25},
+  Q:{name:"Glutamine",three:"Gln"}, G:{name:"Glycine",three:"Gly"}, H:{name:"Histidine",three:"His",sc:"basic",pKa:6.0},
+  I:{name:"Isoleucine",three:"Ile"}, L:{name:"Leucine",three:"Leu"}, K:{name:"Lysine",three:"Lys",sc:"basic",pKa:10.5},
+  M:{name:"Methionine",three:"Met"}, F:{name:"Phenylalanine",three:"Phe"}, P:{name:"Proline",three:"Pro"},
+  S:{name:"Serine",three:"Ser"}, T:{name:"Threonine",three:"Thr"}, W:{name:"Tryptophan",three:"Trp"},
+  Y:{name:"Tyrosine",three:"Tyr",sc:"acidic",pKa:10.5}, V:{name:"Valine",three:"Val"}
+};
+const SC_LABEL={D:"carboxyl",E:"carboxyl",C:"thiol",Y:"phenol",H:"imidazole",K:"\u03b5-amino",R:"guanidinium"};
+const PH_CANDIDATES=[1,2,3,4,5,6,7,7.4,8,9,10,11,12,13];
+const BUFFER=1.0;
+const EPS=1e-9;
+
+/* ============ charge maths (three-state: +/-1, +/-0.5 at pH=pKa, 0) ============ */
+function chargeSimple(type,pKa,pH){
+  if(Math.abs(pH-pKa)<EPS) return type==="acidic" ? -0.5 : 0.5;
+  if(type==="acidic") return pH>pKa ? -1 : 0;
+  return pH<pKa ? 1 : 0;
+}
+const chargePrecise=(type,pKa,pH)=> type==="acidic" ? -1/(1+Math.pow(10,pKa-pH)) : 1/(1+Math.pow(10,pH-pKa));
+
+function freeGroups(code){
+  const a=AA[code];
+  const g=[{label:"\u03b1-carboxyl (\u2013COOH)",type:"acidic",pKa:ALPHA_COOH}];
+  if(a.sc) g.push({label:"Side chain \u00b7 "+SC_LABEL[code],type:a.sc,pKa:a.pKa});
+  g.push({label:"\u03b1-amino (\u2013NH\u2083\u207a)",type:"basic",pKa:ALPHA_NH3});
+  return g;
+}
+function pepGroups(seq){
+  const g=[{label:"N-terminus (\u03b1-amino)",type:"basic",pKa:ALPHA_NH3}];
+  seq.split("").forEach((c,i)=>{const a=AA[c]; if(a.sc) g.push({label:a.three+(i+1)+" side chain \u00b7 "+SC_LABEL[c],type:a.sc,pKa:a.pKa});});
+  g.push({label:"C-terminus (\u03b1-carboxyl)",type:"acidic",pKa:ALPHA_COOH});
+  return g;
+}
+const sumSimple =(g,pH)=> g.reduce((s,x)=>s+chargeSimple(x.type,x.pKa,pH),0);
+const sumPrecise=(g,pH)=> g.reduce((s,x)=>s+chargePrecise(x.type,x.pKa,pH),0);
+
+/* ============ helpers ============ */
+const $=s=>document.querySelector(s);
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const codes=Object.keys(AA);
+const plainCodes=codes.filter(c=>!AA[c].sc);
+function signed(n){ if(Math.abs(n)<EPS)n=0; const s=n>0?"+":(n<0?"\u2212":""); const a=Math.abs(n); const t=Number.isInteger(a)?String(a):a.toFixed(1); return s+t; }
+
+function pickClearPH(g){const ok=PH_CANDIDATES.filter(pH=>g.every(x=>Math.abs(pH-x.pKa)>=BUFFER));return ok.length?rand(ok):null;}
+function pickEdgePH(g){
+  const idx=g.map((_,i)=>i).sort(()=>Math.random()-0.5);
+  for(const t of idx){
+    const pH=g[t].pKa;
+    const ok=g.every((x,i)=> i===t ? true : Math.abs(pH-x.pKa)>=BUFFER);
+    if(ok) return pH;
+  }
+  return null;
+}
+function choosePH(g){
+  if(state.includeEdge && Math.random()<0.4){const e=pickEdgePH(g); if(e!==null) return e;}
+  return pickClearPH(g);
+}
+
+/* ============ state ============ */
+const state={diff:"mixed",includeEdge:true,kind:null,mol:null,groups:[],pH:null,answered:false,solved:0,correct:0,streak:0};
+
+/* ============ generation ============ */
+function makeFree(simple){
+  for(let t=0;t<60;t++){const code=simple?rand(plainCodes):rand(codes);const groups=freeGroups(code);const pH=choosePH(groups);if(pH!==null)return{kind:"aa",mol:code,groups,pH};}
+  return {kind:"aa",mol:"G",groups:freeGroups("G"),pH:pickClearPH(freeGroups("G"))};
+}
+function makePeptide(){
+  for(let t=0;t<80;t++){const len=2+Math.floor(Math.random()*3);let seq="";for(let i=0;i<len;i++)seq+=rand(codes);const groups=pepGroups(seq);const pH=choosePH(groups);if(pH!==null)return{kind:"pep",mol:seq,groups,pH};}
+  return makeFree(false);
+}
+function newQuestion(){
+  let d=state.diff,q;
+  if(d==="mixed")d=rand(["easy","medium","hard"]);
+  if(d==="easy")q=makeFree(true); else if(d==="medium")q=makeFree(false); else q=makePeptide();
+  Object.assign(state,q,{answered:false});
+  render();
+}
+
+/* ============ rendering ============ */
+function render(){
+  const box=$("#molecule");
+  if(state.kind==="aa"){
+    const a=AA[state.mol];
+    const sc=a.sc?(SC_LABEL[state.mol]+" side chain, "+a.sc):"non-ionisable side chain";
+    box.innerHTML='<p class="aa-name">'+a.name+'</p><p class="aa-meta">'+a.three+' \u00b7 '+state.mol+' \u00b7 '+sc+'</p>';
+    $("#specAlt").textContent="Amino acid "+a.name+" at pH "+phText()+", with a "+sc+".";
+  }else{
+    const chips=state.mol.split("").map(c=>{const a=AA[c];return '<div class="res'+(a.sc?' ion':'')+'"><span class="one">'+c+'</span><span class="thr">'+a.three+'</span></div>';}).join("");
+    const names=state.mol.split("").map(c=>AA[c].three).join("\u2013");
+    box.innerHTML='<div class="pep" aria-hidden="true">'+chips+'</div><p class="pep-seq">Sequence (N\u2192C): <strong>'+names+'</strong>. Only the termini and side chains ionise.</p>';
+    const len={2:"Dipeptide",3:"Tripeptide",4:"Tetrapeptide"}[state.mol.length]||"Peptide";
+    $("#specAlt").textContent=len+", N to C: "+names.replace(/\u2013/g,", ")+", at pH "+phText()+".";
+  }
+  $("#phVal").textContent=phText();
+  $("#phMark").style.left=(state.pH/14*100)+"%";
+
+  $("#charge").value=0;
+  $("#work").hidden=true;
+  $("#hint").hidden=true; $("#hint").textContent="";
+  const r=$("#result"); r.className="result-box";
+  r.innerHTML='Set your net charge on the left, then select <strong>Check answer</strong>.';
+  setControls(true);
+}
+function phText(){return Number.isInteger(state.pH)?state.pH+".0":String(state.pH);}
+function setControls(on){
+  $("#checkBtn").disabled=!on; $("#hintBtn").disabled=!on;
+  $("#charge").disabled=!on; $("#inc").disabled=!on; $("#dec").disabled=!on;
+}
+
+function showHint(){
+  const items=state.groups.map(g=>{
+    const t=g.type==="acidic"?'<span class="tag acid">acidic</span>':'<span class="tag base">basic</span>';
+    return "\u2022 "+g.label+" \u2014 "+t+" (pKa "+g.pKa+")";
+  }).join("<br>");
+  $("#hint").innerHTML="<strong>"+state.groups.length+" ionisable group"+(state.groups.length>1?"s":"")+" to weigh up:</strong><br>"+items+
+    "<br>Compare pH "+phText()+" with each pKa: assign +1, 0 or \u22121. If the pH equals a pKa exactly, that group is ionised in half the molecules, so on average it counts as \u00b1\u00bd. Then add them up.";
+  $("#hint").hidden=false;
+}
+
+function check(){
+  if(state.answered)return;
+  let guess=parseFloat($("#charge").value); if(!Number.isFinite(guess))guess=0;
+  const net=sumSimple(state.groups,state.pH);
+  const exact=sumPrecise(state.groups,state.pH);
+  const right=Math.abs(guess-net)<1e-9;
+
+  state.answered=true; state.solved++; if(right)state.correct++;
+  state.streak=right?state.streak+1:0;
+  updateStats();
+
+  const r=$("#result");
+  r.className="result-box "+(right?"ok":"no");
+  const term=Number.isInteger(net)?"net charge":"average net charge";
+  r.innerHTML=right
+    ? '<span class="mark">\u2713 Correct.</span> The '+term+' is '+signed(net)+' e.'
+    : '<span class="mark">\u2717 Not quite.</span> You answered '+signed(guess)+' e; the '+term+' is '+signed(net)+' e.';
+
+  const body=$("#breakBody"); body.innerHTML="";
+  state.groups.forEach(g=>{
+    const c=chargeSimple(g.type,g.pKa,state.pH);
+    const half=Math.abs(state.pH-g.pKa)<EPS;
+    const cls=c>EPS?"p":(c<-EPS?"n":"z");
+    let cmp,fate;
+    if(half){cmp="pH = pKa";fate="ionised in \u00bd of molecules";}
+    else{cmp=state.pH>g.pKa?"pH > pKa":"pH < pKa";fate=g.type==="acidic"?(c<0?"deprotonated":"protonated"):(c>0?"protonated":"deprotonated");}
+    const tr=document.createElement("tr");
+    tr.innerHTML='<td>'+g.label+'<div class="sub">'+g.type+'</div></td><td class="num">'+g.pKa+'</td><td>'+cmp+' \u2192 '+fate+'</td><td class="num"><span class="chip '+cls+'">'+signed(c)+'</span></td>';
+    body.appendChild(tr);
+  });
+  const netCls=net>EPS?"p":(net<-EPS?"n":"z");
+  const trN=document.createElement("tr"); trN.className="net";
+  trN.innerHTML='<td>Net charge</td><td class="num"></td><td>sum of the column \u2192</td><td class="num"><span class="chip '+netCls+'">'+signed(net)+'</span></td>';
+  body.appendChild(trN);
+
+  const exactStr=(exact>=0?"+":"\u2212")+Math.abs(exact).toFixed(2);
+  const halfGroups=state.groups.filter(g=>Math.abs(state.pH-g.pKa)<EPS);
+  let mix="";
+  if(halfGroups.length===1){
+    mix='<br><br>Because pH = pKa for the '+halfGroups[0].label.toLowerCase()+
+        ', the sample is roughly a 50:50 mix: about half the molecules carry '+signed(net+0.5)+
+        ' e and half carry '+signed(net-0.5)+' e. The '+signed(net)+
+        ' e above is the population average \u2014 no single molecule carries a fractional charge.';
+  }
+  $("#exact").innerHTML='Exact mean charge (Henderson\u2013Hasselbalch): <strong>'+exactStr+' e</strong>. The simplified model gives '+signed(net)+' e.'+mix;
+
+  $("#work").hidden=false;
+  setControls(false);
+  $("#nextBtn").focus();
+}
+
+function updateStats(){
+  $("#stStreak").textContent=state.streak;
+  $("#stSolved").textContent=state.solved;
+  $("#stAcc").textContent=state.solved?Math.round(state.correct/state.solved*100)+"%":"\u2014";
+}
+
+/* ============ reference ============ */
+function buildRef(){
+  const tb=$("#pkaTable").querySelector("tbody");
+  const rows=[["\u03b1-carboxyl (\u2013COOH)","acid",ALPHA_COOH],["\u03b1-amino (\u2013NH\u2083\u207a)","base",ALPHA_NH3]];
+  ["D","E","H","C","Y","K","R"].forEach(c=>{const a=AA[c];rows.push([a.name+" ("+c+") \u00b7 "+SC_LABEL[c],a.sc==="acidic"?"acid":"base",a.pKa]);});
+  tb.innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td><span class="tag '+r[1]+'">'+(r[1]==="acid"?"acidic":"basic")+'</span></td><td>'+r[2]+'</td></tr>').join("");
+  $("#refNote").textContent="Acidic groups (α-carboxyl, Asp, Glu, Cys, Tyr) go negative when deprotonated; basic groups (α-amino, His, Lys, Arg) go positive when protonated.";
+}
+
+/* ============ wiring ============ */
+const clampHalf=v=>Math.max(-7,Math.min(7,Math.round(v*2)/2));
+$("#inc").addEventListener("click",()=>{const f=$("#charge");f.value=clampHalf((parseFloat(f.value)||0)+0.5);});
+$("#dec").addEventListener("click",()=>{const f=$("#charge");f.value=clampHalf((parseFloat(f.value)||0)-0.5);});
+$("#checkBtn").addEventListener("click",check);
+$("#hintBtn").addEventListener("click",showHint);
+$("#nextBtn").addEventListener("click",newQuestion);
+$("#charge").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();check();}});
+$("#diffGroup").addEventListener("change",e=>{
+  state.diff=e.target.value;
+  document.querySelectorAll("#diffGroup .radio").forEach(l=>l.classList.toggle("checked",l.querySelector("input").checked));
+  newQuestion();
+});
+$("#edgeToggle").addEventListener("change",e=>{
+  state.includeEdge=e.target.checked;
+  $("#edgeLabel").classList.toggle("checked",e.target.checked);
+  newQuestion();
+});
+
+buildRef();
+newQuestion();
+</script>
+</body>
+</html>
