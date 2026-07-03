@@ -159,9 +159,7 @@
       <h1>Amino acid code drill</h1>
       <p>A self-paced flashcard drill for converting between the full name, the
          three-letter code and the one-letter code of the 20 standard amino acids.
-         You are shown one form; supply the other two. Every round shows the full
-         answer and the amino acid's category, so a miss is still a learning moment.
-         Progress is not saved — reloading the page starts a fresh session.</p>
+         You are shown one form, you must supply the other two.</p>
     </div>
 
     <div class="grid">
@@ -606,7 +604,7 @@ function updateWeak(){
   const area = document.getElementById('weakArea');
   const missed = AAS.filter(a=>stats[a.c3].wrong > 0);
   if(missed.length === 0){
-    area.innerHTML = '<p class="note" style="margin:0;">No misses yet — nice work. '+
+    area.innerHTML = '<p class="note" style="margin:0;">No misses yet. '+
       'Anything you get wrong will appear here, hardest first.</p>';
     return;
   }
