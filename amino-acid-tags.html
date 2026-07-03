@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<!--
+  Amino acid side chain classification (multi-select tag activity)
+  Built on the accessible-simulations house style (light only, GOV.UK lineage).
+  Single self-contained .html file. No build step, no storage APIs.
+-->
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amino acid side chain classification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- House style tokens (do not edit) ---------- */
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    --series1:#1d4ed8; --series2:#a8420a; --series3:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
+
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:none;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--surface-2);border:1px solid var(--border);
+         border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:1rem;margin:0 0 14px;font-weight:700;}
+
+  .readout{font-variant-numeric:tabular-nums;color:var(--ink-muted);font-weight:400;}
+
+  /* buttons */
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{appearance:none;font:inherit;font-weight:600;min-height:44px;padding:0 18px;
+    border-radius:var(--radius);cursor:pointer;border:2px solid var(--accent);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn:hover:not(:disabled){filter:brightness(.96);}
+  .btn:disabled{cursor:default;border-color:var(--border);color:var(--ink-muted);
+    background:var(--surface-2);}
+
+  /* visible focus everywhere — WCAG 2.4.7 / 2.4.11 */
+  button:focus-visible,input:focus-visible,.chip:focus-visible,[tabindex]:focus-visible{
+    outline:3px solid var(--focus);outline-offset:2px;}
+
+  /* amino acid display */
+  .aa-name{margin:0 0 10px;font-size:1.25rem;font-weight:700;}
+  .aa-name .codes{font-size:.9rem;font-weight:600;color:var(--ink-muted);
+    font-variant-numeric:tabular-nums;margin-left:6px;}
+  .structure{background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:8px;}
+  .mol{width:100%;height:auto;display:block;max-width:340px;margin:0 auto;}
+  .mol text{font-family:var(--font);}
+  .text-alt{margin-top:12px;font-size:.9rem;color:var(--ink-muted);}
+
+  /* tag chips (toggle buttons) */
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  @media (max-width:430px){.chips{grid-template-columns:1fr;}}
+  .chip{display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;
+    border:2px solid var(--border);background:var(--surface);color:var(--ink);
+    border-radius:var(--radius);font:inherit;font-weight:600;font-size:.95rem;
+    cursor:pointer;text-align:left;}
+  .chip:hover:not(:disabled){border-color:var(--accent);}
+  .chip .mark{width:22px;height:22px;flex:none;border:2px solid var(--border);
+    border-radius:4px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:15px;line-height:1;background:var(--surface);}
+  .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .chip[aria-pressed="true"] .mark{background:var(--accent-ink);color:var(--accent);border-color:var(--accent-ink);}
+  .chip:disabled{cursor:default;opacity:1;}
+  .chip:disabled:not([aria-pressed="true"]){color:var(--ink-muted);}
+
+  .readout-box{padding:14px 16px;border-radius:var(--radius);
+    background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));font-size:.95rem;}
+  .readout-box strong{font-variant-numeric:tabular-nums;}
+
+  /* feedback breakdown */
+  #feedback h3{font-size:.98rem;margin:0 0 8px;font-weight:700;}
+  .fb-score{font-variant-numeric:tabular-nums;}
+  .fb-list{list-style:none;padding:0;margin:6px 0 4px;}
+  .fb-list li{display:flex;gap:8px;padding:2px 0;font-size:.93rem;}
+  .fb-ico{flex:none;width:1.5em;text-align:center;font-weight:700;}
+  .fb-sub{font-weight:700;font-size:.9rem;margin:10px 0 2px;}
+  .fb-why{margin:12px 0 0;font-size:.93rem;}
+  .fb-none{color:var(--ink-muted);font-size:.9rem;}
+
+  /* summary table */
+  table.tbl{border-collapse:collapse;width:100%;font-size:.9rem;
+    font-variant-numeric:tabular-nums;margin-top:4px;}
+  table.tbl th,table.tbl td{border:1px solid var(--border);padding:5px 9px;text-align:left;}
+  table.tbl th{background:var(--surface);}
+  table.tbl td.num{text-align:right;}
+  .diag{margin:14px 0 0;font-size:.93rem;}
+  .diag ul{margin:6px 0 0;padding-left:20px;}
+
+  .note{margin-top:10px;font-size:.82rem;color:var(--ink-muted);}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sim">
+    <div class="sim-head">
+      <h1>Amino acid side chain classification</h1>
+      <p>Each amino acid is shown by its side chain (R group); the backbone is drawn in
+         grey so your attention stays on the R group. Select <em>every</em> category that
+         applies — many side chains fit more than one — then choose <strong>Check answer</strong>
+         for a tag-by-tag breakdown and the structural reason behind each tag.</p>
+      <p class="note">Every structure is drawn as it exists at pH&nbsp;7, as a zwitterion: the
+         backbone α-amino group is protonated (–NH₃⁺, or –NH₂⁺ in proline) and the α-carboxyl
+         group is deprotonated (–COO⁻). Ionisable side chains follow the same rule — aspartate
+         and glutamate as carboxylates (–COO⁻), lysine as –NH₃⁺, and arginine's guanidinium
+         group protonated (+). Histidine (side-chain pKa ≈ 6) is shown neutral, because at
+         pH&nbsp;7 it is only partly protonated.</p>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: the amino acid structure -->
+      <div>
+        <div class="panel" aria-labelledby="aaHead">
+          <h2 id="aaHead">Amino acid <span id="progress" class="readout">1 of 20</span></h2>
+          <p class="aa-name"><span id="aaName">—</span><span class="codes" id="aaCodes"></span></p>
+          <div class="structure" id="structure"></div>
+          <p class="text-alt" id="structDesc">Structural description of the side chain.</p>
+        </div>
+      </div>
+
+      <!-- RIGHT: tag selection, then score, feedback, round summary -->
+      <div>
+        <div class="panel">
+          <h2>Select all tags that apply</h2>
+          <div class="chips" id="chips" role="group" aria-label="Category tags — select all that apply"></div>
+          <p class="note" id="exNote" aria-live="polite">
+            Polar and non-polar are mutually exclusive, as are basic and acidic — selecting
+            one member of a pair clears the other.
+          </p>
+          <div class="btnrow">
+            <button type="button" class="btn btn-primary" id="checkBtn">Check answer</button>
+            <button type="button" class="btn btn-ghost" id="nextBtn" disabled>Next amino acid</button>
+          </div>
+          <p class="note">
+            Your mark is how many of the 8 tags you get right — counting both tags you
+            correctly select and tags you correctly leave out — out of 8. This is a low-stakes
+            practice tool: there is no timer, and nothing is saved when you reload the page.
+          </p>
+        </div>
+
+        <div class="panel">
+          <h2>Score this round</h2>
+          <div class="readout-box" aria-live="polite" id="scoreBox">
+            No amino acids scored yet this round.
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Feedback</h2>
+          <div id="feedback" aria-live="polite">
+            Select the tags you think apply, then choose <strong>Check answer</strong>.
+          </div>
+        </div>
+
+        <div class="panel" id="summaryPanel" hidden>
+          <h2 id="summaryHead" tabindex="-1">Round summary</h2>
+          <div id="summaryBody"></div>
+          <div class="btnrow" style="margin-top:16px;">
+            <button type="button" class="btn btn-primary" id="againBtn">Do another round</button>
+            <button type="button" class="btn btn-ghost" id="freshBtn">Start fresh</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===========================================================================
+   DATA — the confirmed 20-amino-acid answer key, embedded exactly as briefed.
+   Do NOT re-derive tags from first principles; this table is the answer key.
+   Each side chain (sc) is a set of skeletal bonds + heteroatom labels in a
+   shared 240x250 coordinate frame (alpha-carbon at 120,210). Carbons are
+   implicit vertices (standard skeletal convention); N/O/S carry both CPK
+   colour AND an elemental text label, so colour is never the sole signal.
+   =========================================================================== */
+const TAGS = ['Polar','Non-polar','Acidic','Basic','Aromatic','Aliphatic','Sulfur-containing','Hydroxy-containing'];
+const PAIR = {'Polar':'Non-polar','Non-polar':'Polar','Acidic':'Basic','Basic':'Acidic'};
+
+/* bond: [x1,y1,x2,y2,order]   label: [x,y,text,element,anchor] */
+const AA = [
+  { name:'Glycine', three:'Gly', one:'G',
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain is a single hydrogen atom — there is no carbon-containing R group.',
+    why:'With only a hydrogen as its R group, glycine is non-polar and, having no aromatic ring, counts as aliphatic.',
+    sc:{ bonds:[[120,210,137,183,1]], labels:[[143,178,'H','H','start']] } },
+
+  { name:'Alanine', three:'Ala', one:'A',
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain is a single methyl group (one carbon, –CH₃).',
+    why:'A small methyl side chain is a non-polar, aliphatic hydrocarbon.',
+    sc:{ bonds:[[120,210,137,181,1]], labels:[] } },
+
+  { name:'Valine', three:'Val', one:'V',
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain is a branched three-carbon group: one carbon bearing two methyl groups (isopropyl).',
+    why:'The branched hydrocarbon side chain is non-polar and aliphatic.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,114,166,1],[137,181,160,166,1]], labels:[] } },
+
+  { name:'Leucine', three:'Leu', one:'L',
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain is a four-carbon hydrocarbon that branches into two methyl groups at its far end (isobutyl).',
+    why:'The branched hydrocarbon side chain is non-polar and aliphatic.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,97,137,1],[120,152,143,137,1]], labels:[] } },
+
+  { name:'Isoleucine', three:'Ile', one:'I',
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain is a four-carbon hydrocarbon branching at the first carbon (sec-butyl).',
+    why:'The branched hydrocarbon side chain is non-polar and aliphatic.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,162,171,1],[137,181,120,152,1],[120,152,137,123,1]], labels:[] } },
+
+  { name:'Proline', three:'Pro', one:'P', pro:true,
+    tags:['Non-polar','Aliphatic'],
+    desc:'The side chain loops back to the backbone nitrogen, forming a saturated five-membered ring (pyrrolidine).',
+    why:'Proline’s saturated hydrocarbon ring is non-polar and aliphatic; the ring also locks the backbone geometry.',
+    sc:{ bonds:[[120,210,154,198,1],[154,198,158,162,1],[158,162,124,150,1],[124,150,100,178,1],[100,178,120,210,1]],
+         labels:[[98,181,'H\u2082N\u207A','N','end']] } },
+
+  { name:'Methionine', three:'Met', one:'M',
+    tags:['Non-polar','Aliphatic','Sulfur-containing'],
+    desc:'The side chain is a two-carbon chain ending in a sulfur atom that links to a terminal methyl group (a thioether).',
+    why:'The hydrocarbon chain makes methionine non-polar and aliphatic, and its thioether means it is also sulfur-containing.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,137,123,1],[137,123,120,94,1]],
+         labels:[[137,123,'S','S','middle']] } },
+
+  { name:'Phenylalanine', three:'Phe', one:'F',
+    tags:['Non-polar','Aromatic'],
+    desc:'The side chain is a –CH₂– linker joined to a six-membered benzene ring (all carbon).',
+    why:'The benzene ring makes phenylalanine aromatic, and with no polar groups the side chain is non-polar.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],
+                [120,152,92,136,1],[92,136,92,104,2],[92,104,120,88,1],[120,88,148,104,2],[148,104,148,136,1],[148,136,120,152,2]],
+         labels:[] } },
+
+  { name:'Tryptophan', three:'Trp', one:'W',
+    tags:['Non-polar','Aromatic'],
+    desc:'The side chain is a –CH₂– linker joined to a fused two-ring (bicyclic) indole system that contains one nitrogen.',
+    why:'The indole ring system makes tryptophan aromatic; overall the bulky, largely hydrocarbon side chain is non-polar.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],
+                [120,152,100,125,2],[100,125,120,98,1],[120,98,152,108,1],[152,108,152,142,1],[152,142,120,152,1],
+                [152,142,181,159,2],[181,159,210,142,1],[210,142,210,108,2],[210,108,181,91,1],[181,91,152,108,2]],
+         labels:[[120,86,'NH','N','middle']] } },
+
+  { name:'Tyrosine', three:'Tyr', one:'Y',
+    tags:['Polar','Aromatic','Hydroxy-containing'],
+    desc:'The side chain is a –CH₂– linker to a six-membered benzene ring carrying a hydroxyl (–OH) group (a phenol).',
+    why:'The ring makes tyrosine aromatic, and its –OH makes it both hydroxy-containing and polar, because that –OH can hydrogen-bond.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],
+                [120,152,92,136,1],[92,136,92,104,2],[92,104,120,88,1],[120,88,148,104,2],[148,104,148,136,1],[148,136,120,152,2],
+                [120,88,120,60,1]],
+         labels:[[120,50,'OH','O','middle']] } },
+
+  { name:'Serine', three:'Ser', one:'S',
+    tags:['Polar','Hydroxy-containing'],
+    desc:'The side chain is a single carbon bearing a hydroxyl (–OH) group.',
+    why:'The hydroxyl (–OH) group makes serine polar and hydroxy-containing.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1]],
+         labels:[[120,143,'OH','O','middle']] } },
+
+  { name:'Threonine', three:'Thr', one:'T',
+    tags:['Polar','Hydroxy-containing'],
+    desc:'The side chain is a carbon bearing both a hydroxyl (–OH) group and a methyl group.',
+    why:'The hydroxyl (–OH) group makes threonine polar and hydroxy-containing.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,114,166,1],[137,181,160,166,1]],
+         labels:[[108,166,'OH','O','end']] } },
+
+  { name:'Cysteine', three:'Cys', one:'C',
+    tags:['Polar','Sulfur-containing'],
+    desc:'The side chain is a single carbon bearing a thiol (–SH) group (sulfur with hydrogen).',
+    why:'The thiol (–SH) group makes cysteine polar and sulfur-containing.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1]],
+         labels:[[120,143,'SH','S','middle']] } },
+
+  { name:'Asparagine', three:'Asn', one:'N',
+    tags:['Polar'],
+    desc:'The side chain is a –CH₂– linker to an amide group: a carbon double-bonded to oxygen and single-bonded to an –NH₂.',
+    why:'The amide group is polar — its C=O and N–H can hydrogen-bond — and it is neither acidic nor basic at physiological pH.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,93,137,2],[120,152,147,137,1]],
+         labels:[[87,133,'O','O','end'],[152,137,'NH₂','N','start']] } },
+
+  { name:'Glutamine', three:'Gln', one:'Q',
+    tags:['Polar'],
+    desc:'The side chain is a two-carbon linker to an amide group: a carbon double-bonded to oxygen and single-bonded to an –NH₂.',
+    why:'The amide group is polar — its C=O and N–H can hydrogen-bond — and it is neither acidic nor basic at physiological pH.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,137,123,1],[137,123,110,108,2],[137,123,164,110,1]],
+         labels:[[104,104,'O','O','end'],[169,108,'NH₂','N','start']] } },
+
+  { name:'Lysine', three:'Lys', one:'K',
+    tags:['Polar','Basic'],
+    desc:'The side chain is a four-carbon chain ending in a primary amine, drawn protonated (–NH₃⁺) as it is at pH 7.',
+    why:'The terminal amine makes lysine polar and basic; at pH 7 it has gained a proton and carries a positive charge.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,137,123,1],[137,123,120,94,1],[120,94,137,65,1]],
+         labels:[[143,58,'NH₃⁺','N','start']] } },
+
+  { name:'Arginine', three:'Arg', one:'R',
+    tags:['Polar','Basic'],
+    desc:'The side chain is a three-carbon chain ending in a guanidinium group — one carbon bonded to three nitrogen atoms — drawn protonated, carrying a delocalised positive charge, as it is at pH 7.',
+    why:'The guanidinium group makes arginine polar and basic; at pH 7 it is protonated and carries a positive charge spread across its three nitrogens.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,137,123,1],[137,123,120,94,1],[120,94,137,65,1],
+                [137,65,118,40,2],[137,65,164,54,1]],
+         labels:[[112,90,'NH','N','end'],[110,36,'NH₂⁺','N','end'],[170,52,'NH₂','N','start']] } },
+
+  { name:'Histidine', three:'His', one:'H',
+    tags:['Polar','Basic','Aromatic'],
+    desc:'The side chain is a –CH₂– linker to a five-membered imidazole ring containing two nitrogen atoms.',
+    why:'The imidazole ring makes histidine aromatic and basic, and the ring nitrogens make it polar overall. Its side-chain pKa (≈ 6) sits close to pH 7, so it is drawn neutral — only partly protonated at physiological pH.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,150,1],
+                [120,150,149,129,2],[149,129,138,95,1],[138,95,102,95,2],[102,95,91,129,1],[91,129,120,150,1]],
+         labels:[[145,90,'N','N','start'],[83,129,'NH','N','end']] } },
+
+  { name:'Aspartate', three:'Asp', one:'D',
+    tags:['Polar','Acidic'],
+    desc:'The side chain is a –CH₂– linker to a carboxylate group (–COO⁻): a carbon double-bonded to one oxygen and single-bonded to another oxygen that carries a negative charge. It is drawn deprotonated, as it is at pH 7.',
+    why:'The carboxylate group makes aspartate polar and acidic; at pH 7 it has lost its proton and carries a negative charge.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,93,137,2],[120,152,147,137,1]],
+         labels:[[87,133,'O','O','end'],[152,137,'O⁻','O','start']] } },
+
+  { name:'Glutamate', three:'Glu', one:'E',
+    tags:['Polar','Acidic'],
+    desc:'The side chain is a two-carbon linker to a carboxylate group (–COO⁻): a carbon double-bonded to one oxygen and single-bonded to another oxygen that carries a negative charge. It is drawn deprotonated, as it is at pH 7.',
+    why:'The carboxylate group makes glutamate polar and acidic; at pH 7 it has lost its proton and carries a negative charge.',
+    sc:{ bonds:[[120,210,137,181,1],[137,181,120,152,1],[120,152,137,123,1],[137,123,110,108,2],[137,123,164,110,1]],
+         labels:[[104,104,'O','O','end'],[169,108,'O⁻','O','start']] } }
+];
+
+/* ===========================================================================
+   STRUCTURE RENDERER (inline SVG). CPK colours are contrast-safe on white and
+   every coloured atom also carries its elemental letter (1.4.1 / 1.4.11).
+   =========================================================================== */
+const CPK = { O:'#c1121f', N:'#1846c4', S:'#8a6b00', H:'#16191f', C:'#16191f', BB:'#4b515a' };
+
+function bondSVG(x1,y1,x2,y2,order,muted){
+  const stroke = muted ? CPK.BB : '#16191f';
+  const w = muted ? 1.6 : 2.4;
+  let s = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`;
+  if (order === 2){
+    const dx = x2-x1, dy = y2-y1, len = Math.hypot(dx,dy) || 1;
+    const ox = -dy/len*4.6, oy = dx/len*4.6, sh = 0.18;
+    const ax1 = x1+dx*sh+ox, ay1 = y1+dy*sh+oy, ax2 = x2-dx*sh+ox, ay2 = y2-dy*sh+oy;
+    s += `<line x1="${ax1.toFixed(1)}" y1="${ay1.toFixed(1)}" x2="${ax2.toFixed(1)}" y2="${ay2.toFixed(1)}" stroke="${stroke}" stroke-width="${w}" stroke-linecap="round"/>`;
+  }
+  return s;
+}
+function labelSVG(x,y,text,el,anchor){
+  const c = CPK[el] || '#16191f';
+  const a = anchor || 'middle';
+  const common = `x="${x}" y="${y}" text-anchor="${a}" dominant-baseline="middle" font-size="14.5" font-weight="600"`;
+  // Two passes: a white-stroked copy underneath (the halo), then the coloured glyph on
+  // top. This layers correctly even in engines that ignore the paint-order property.
+  return `<text ${common} fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linejoin="round">${text}</text>`+
+         `<text ${common} fill="${c}">${text}</text>`;
+}
+function backboneSVG(pro){
+  // Muted backbone context. Non-proline: amino (H2N) left, carboxyl (COOH) right.
+  // Proline: only the carboxyl is drawn here; the amino nitrogen is in the ring.
+  let s = '';
+  if (pro){
+    s += bondSVG(120,210,146,224,1,true);
+    s += labelSVG(150,228,'COO\u207B','BB','start');
+  } else {
+    s += bondSVG(120,210,96,226,1,true);
+    s += bondSVG(120,210,144,226,1,true);
+    s += labelSVG(92,230,'H\u2083N\u207A','BB','end');
+    s += labelSVG(148,230,'COO\u207B','BB','start');
+  }
+  return s;
+}
+function structureSVG(a){
+  let body = backboneSVG(!!a.pro);
+  a.sc.bonds.forEach(b => { body += bondSVG(b[0],b[1],b[2],b[3],b[4]||1,false); });
+  a.sc.labels.forEach(l => { body += labelSVG(l[0],l[1],l[2],l[3],l[4]); });
+  return `<svg class="mol" viewBox="0 0 240 250" role="img" aria-label="Skeletal structure. ${a.desc}">`+
+         body + `</svg>`;
+}
+
+/* ===========================================================================
+   SESSION STATE (JavaScript only — no storage APIs)
+   =========================================================================== */
+let order = [];            // AA indices for the current pass
+let pos = 0;               // position within order
+let selected = new Set();  // currently selected tags for this item
+let locked = false;        // true once the current item has been checked
+let roundNum = 1;
+let roundResults = [];     // {idx, score, missed:[], wrong:[]}
+let lastScores = null;     // idx -> score from previous round (for weighting)
+let prevLastIdx = -1;      // last AA of previous order (to avoid immediate repeat)
+
+const $ = id => document.getElementById(id);
+
+function shuffle(arr){
+  for (let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+function weightedOrder(weights){
+  const pool=[...Array(AA.length).keys()], pw=pool.map(i=>Math.max(1,weights[i])), out=[];
+  while (pool.length){
+    let tot=pw.reduce((s,w)=>s+w,0), r=Math.random()*tot, j=0;
+    while (r>pw[j] && j<pw.length-1){ r-=pw[j]; j++; }
+    out.push(pool[j]); pool.splice(j,1); pw.splice(j,1);
+  }
+  return out;
+}
+function buildOrder(weighted){
+  let o;
+  if (weighted && lastScores){
+    const w = AA.map((_,i)=> (8 - (lastScores[i]??8)) + 1 ); // lower score -> higher weight
+    o = weightedOrder(w);
+  } else {
+    o = shuffle([...Array(AA.length).keys()]);
+  }
+  if (o.length>1 && o[0]===prevLastIdx){ [o[0],o[1]]=[o[1],o[0]]; }
+  return o;
+}
+
+/* ---------- chips ---------- */
+function buildChips(){
+  const wrap = $('chips'); wrap.innerHTML='';
+  TAGS.forEach(tag=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='chip'; b.setAttribute('aria-pressed','false'); b.dataset.tag=tag;
+    b.innerHTML = `<span class="mark" aria-hidden="true"></span><span>${tag}</span>`+
+                  `<span class="vh" data-state> (not selected)</span>`;
+    b.addEventListener('click',()=>toggleChip(tag));
+    wrap.appendChild(b);
+  });
+}
+function chipEl(tag){ return $('chips').querySelector(`[data-tag="${tag}"]`); }
+function setChip(tag,on){
+  const b=chipEl(tag);
+  b.setAttribute('aria-pressed', on?'true':'false');
+  b.querySelector('.mark').textContent = on?'\u2713':'';
+  b.querySelector('[data-state]').textContent = on?' (selected)':' (not selected)';
+}
+function toggleChip(tag){
+  if (locked) return;
+  if (selected.has(tag)){ selected.delete(tag); setChip(tag,false); }
+  else {
+    selected.add(tag); setChip(tag,true);
+    const mate = PAIR[tag];
+    if (mate && selected.has(mate)){
+      selected.delete(mate); setChip(mate,false);
+      $('exNote').textContent = `“${mate}” was cleared because it is mutually exclusive with “${tag}”.`;
+    } else {
+      $('exNote').textContent = 'Polar and non-polar are mutually exclusive, as are basic and acidic — selecting one member of a pair clears the other.';
+    }
+  }
+}
+
+/* ---------- render one amino acid ---------- */
+function renderCurrent(){
+  const a = AA[order[pos]];
+  selected = new Set(); locked = false;
+  $('progress').textContent = `${pos+1} of ${AA.length}`;
+  $('aaName').textContent = a.name;
+  $('aaCodes').textContent = `(${a.three}, ${a.one})`;
+  $('structure').innerHTML = structureSVG(a);
+  $('structDesc').textContent = a.desc;
+  buildChips();
+  $('exNote').textContent = 'Polar and non-polar are mutually exclusive, as are basic and acidic — selecting one member of a pair clears the other.';
+  $('checkBtn').disabled = false;
+  $('nextBtn').disabled = true;
+  $('nextBtn').textContent = (pos === AA.length-1) ? 'See round summary' : 'Next amino acid';
+  $('feedback').innerHTML = 'Select the tags you think apply, then choose <strong>Check answer</strong>.';
+  updateScoreBox();
+}
+
+/* ---------- check the current selection ---------- */
+function checkAnswer(){
+  if (locked) return;
+  locked = true;
+  const a = AA[order[pos]];
+  const key = new Set(a.tags);
+  const correctlySelected=[], missed=[], wrong=[]; let score=0;
+  TAGS.forEach(tag=>{
+    const chosen = selected.has(tag), inKey = key.has(tag);
+    if (chosen && inKey){ correctlySelected.push(tag); score++; }
+    else if (!chosen && !inKey){ score++; }        // correct omission
+    else if (!chosen && inKey){ missed.push(tag); }
+    else { wrong.push(tag); }                        // chosen && !inKey
+  });
+  const correctOmitted = 8 - correctlySelected.length - missed.length - wrong.length;
+
+  roundResults.push({ idx:order[pos], score, missed:[...missed], wrong:[...wrong] });
+
+  // lock chips
+  $('chips').querySelectorAll('.chip').forEach(b=>b.disabled=true);
+  $('checkBtn').disabled = true;
+  $('nextBtn').disabled = false;
+
+  // feedback breakdown
+  const li = (ico,label) => `<li><span class="fb-ico" aria-hidden="true">${ico}</span><span>${label}</span></li>`;
+  let html = `<h3>${a.name}: <span class="fb-score">${score} / 8</span> tags correct</h3>`;
+
+  html += `<div class="fb-sub">Correctly selected</div>`;
+  html += correctlySelected.length
+    ? `<ul class="fb-list">`+correctlySelected.map(t=>li('\u2713', `${t} — correct`)).join('')+`</ul>`
+    : `<p class="fb-none">None selected that belong here.</p>`;
+
+  html += `<div class="fb-sub">Missed (should have been selected)</div>`;
+  html += missed.length
+    ? `<ul class="fb-list">`+missed.map(t=>li('\uFF0B', `${t} — missed`)).join('')+`</ul>`
+    : `<p class="fb-none">Nothing missed.</p>`;
+
+  html += `<div class="fb-sub">Wrongly selected</div>`;
+  html += wrong.length
+    ? `<ul class="fb-list">`+wrong.map(t=>li('\u2717', `${t} — does not apply`)).join('')+`</ul>`
+    : `<p class="fb-none">Nothing selected in error.</p>`;
+
+  html += `<p class="fb-none" style="margin-top:8px;">Plus ${correctOmitted} other tag${correctOmitted===1?'':'s'} correctly left out.</p>`;
+  html += `<p class="fb-why"><strong>Why:</strong> ${a.why}</p>`;
+
+  $('feedback').innerHTML = html;
+  updateScoreBox();
+}
+
+function updateScoreBox(){
+  const n = roundResults.length;
+  if (!n){ $('scoreBox').textContent = 'No amino acids scored yet this round.'; return; }
+  const avg = roundResults.reduce((s,r)=>s+r.score,0)/n;
+  $('scoreBox').innerHTML =
+    `Round ${roundNum} average: <strong>${avg.toFixed(1)} / 8</strong> tags correct `+
+    `<span class="readout">(${n} of ${AA.length} attempted)</span>`;
+}
+
+/* ---------- advance ---------- */
+function next(){
+  if (!locked) return;
+  if (pos < AA.length-1){ pos++; renderCurrent(); $('aaHead').scrollIntoView({block:'nearest'}); }
+  else showSummary();
+}
+
+/* ---------- round summary + cross-item diagnostics ---------- */
+function showSummary(){
+  const missTally={}, wrongTally={};
+  TAGS.forEach(t=>{ missTally[t]=0; wrongTally[t]=0; });
+  roundResults.forEach(r=>{ r.missed.forEach(t=>missTally[t]++); r.wrong.forEach(t=>wrongTally[t]++); });
+  const avg = roundResults.reduce((s,r)=>s+r.score,0)/roundResults.length;
+
+  let rows = roundResults.map(r=>{
+    const a=AA[r.idx];
+    return `<tr><td>${a.name} <span class="readout">(${a.one})</span></td><td class="num">${r.score} / 8</td></tr>`;
+  }).join('');
+
+  const topOf = tally => {
+    const max = Math.max(...Object.values(tally));
+    if (max===0) return null;
+    return { tags:TAGS.filter(t=>tally[t]===max), count:max };
+  };
+  const topMiss = topOf(missTally), topWrong = topOf(wrongTally);
+  const phrase = (r,verb) => r
+    ? `<strong>${r.tags.join(', ')}</strong> — ${verb} on ${r.count} of ${AA.length} amino acid${r.count===1?'':'s'}.`
+    : `none — no tag was ${verb} more than others.`;
+
+  let diagList = TAGS
+    .filter(t=>missTally[t]||wrongTally[t])
+    .map(t=>`<li>${t}: missed ${missTally[t]}, wrongly added ${wrongTally[t]}</li>`)
+    .join('');
+  if (!diagList) diagList = '<li>No tags were missed or wrongly added — a clean round.</li>';
+
+  $('summaryBody').innerHTML =
+    `<p>Round ${roundNum} complete. Average <strong>${avg.toFixed(1)} / 8</strong> tags correct across all ${AA.length} amino acids.</p>`+
+    `<table class="tbl"><thead><tr><th>Amino acid</th><th class="num">Score</th></tr></thead><tbody>${rows}</tbody></table>`+
+    `<div class="diag"><p>Most often missed: ${phrase(topMiss,'missed')}</p>`+
+    `<p>Most often wrongly added: ${phrase(topWrong,'wrongly added')}</p>`+
+    `<p style="margin-top:8px;">Per-tag pattern this round:</p><ul>${diagList}</ul></div>`;
+
+  $('summaryPanel').hidden = false;
+  $('checkBtn').disabled = true;
+  $('nextBtn').disabled = true;
+  $('summaryHead').focus();
+}
+
+/* ---------- start a new round ---------- */
+function newRound(weighted){
+  if (weighted){
+    lastScores = {};
+    roundResults.forEach(r=>{ lastScores[r.idx]=r.score; });
+    roundNum++;
+  } else {
+    lastScores = null; roundNum = 1;
+  }
+  prevLastIdx = order.length ? order[order.length-1] : -1;
+  order = buildOrder(weighted);
+  pos = 0; roundResults = [];
+  $('summaryPanel').hidden = true;
+  renderCurrent();
+}
+
+/* ---------- wire up ---------- */
+$('checkBtn').addEventListener('click', checkAnswer);
+$('nextBtn').addEventListener('click', next);
+$('againBtn').addEventListener('click', ()=>newRound(true));
+$('freshBtn').addEventListener('click', ()=>newRound(false));
+
+/* init */
+newRound(false);
+</script>
+</body>
+</html>
