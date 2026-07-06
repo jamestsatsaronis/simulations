@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<!--
+  Secondary Structure — Interactive 3D Views
+  House style: accessible-simulations ("Plain Service", light only), WCAG 2.2 AA.
+  Single self-contained .html file. GitHub-Pages ready and LMS-iframe embeddable.
+  No build step, no storage APIs. Only external asset is the Google Fonts stylesheet;
+  the five NCBI iCn3D viewers are third-party embeds (intentional).
+-->
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secondary Structure — Interactive 3D Views</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- House style tokens (unchanged) ---------- */
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    /* the two approved, colour-vision-safe category colours */
+    --helix:#1d4ed8;  /* blue  (series 1) — alpha-helix */
+    --sheet:#a8420a;  /* rust  (series 2) — beta-sheet  */
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
+
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:65ch;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface-2);border:1px solid var(--border);
+        border-radius:var(--radius);overflow:hidden;}
+  .card-head{padding:16px 18px 18px;}
+
+  /* category tag: colour + text label, so meaning is never colour alone */
+  .tag{display:inline-block;font-size:.8rem;font-weight:700;letter-spacing:.03em;
+       text-transform:uppercase;padding:4px 10px;border-radius:var(--radius);
+       color:var(--accent-ink);}
+  .tag.helix{background:var(--helix);}
+  .tag.sheet{background:var(--sheet);}
+
+  .card-head h2{font-size:1.05rem;margin:10px 0 4px;font-weight:700;}
+  .feature{font-size:1rem;color:var(--ink);margin:0;line-height:1.5;}
+  .pdb{font-size:.9rem;color:var(--ink-muted);margin:6px 0 0;}
+
+  iframe{display:block;width:100%;height:400px;border:none;
+         border-top:1px solid var(--border);background:#000;}
+
+  /* visible focus everywhere — WCAG 2.4.7 / 2.4.11 */
+  iframe:focus-visible{
+    outline:3px solid var(--focus);outline-offset:2px;border-radius:var(--radius);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sim">
+    <div class="sim-head">
+      <h1>Secondary Structure — Interactive 3D Views</h1>
+      <p>Five iCn3D embeds (NCBI). Use each viewer's menu (☰, top-left of the panel)
+        for controls, or with a mouse left-drag to rotate, scroll to zoom and right-drag
+        to move. Every caption states what the colours represent, so the meaning does not
+        depend on colour alone.</p>
+    </div>
+
+    <section class="grid" aria-label="Interactive secondary-structure viewers">
+
+      <!-- VIEW 1 -->
+      <div class="card">
+        <div class="card-head">
+          <span class="tag helix">&alpha;-helix · backbone H-bonds</span>
+          <h2>The i→i+4 hydrogen-bond pattern</h2>
+          <p class="feature">Backbone only (side chains hidden), ball-and-stick, coloured by
+            atom — carbon grey, oxygen red, nitrogen blue. Green dashed lines mark the backbone
+            C=O···H&ndash;N hydrogen bonds from residue <em>i</em> to <em>i</em>+4 that hold the
+            coil together.</p>
+          <p class="pdb">Myoglobin · PDB 1MBN · helix A (res 3–18)</p>
+        </div>
+        <iframe title="Interactive 3D view of an alpha helix from myoglobin (PDB 1MBN), backbone only with side chains hidden, ball-and-stick coloured by atom (carbon grey, oxygen red, nitrogen blue), with the i to i plus 4 backbone hydrogen bonds shown as green dashed lines"
+          allowfullscreen
+          src="https://www.ncbi.nlm.nih.gov/Structure/icn3d/?mmdbid=1MBN&amp;usepdbnum=1&amp;width=100%25&amp;height=100%25&amp;showtitle=0&amp;showcommand=0&amp;closepopup=1&amp;shownote=0&amp;mobilemenu=1&amp;command=select%20.A:3-18%20%7C%20name%20helixa;%20show%20selection;%20zoom%20selection;%20style%20proteins%20ball%20and%20stick;%20style%20sidec%20nothing;%20color%20atom;%20line%20graph%20interaction%20pairs%20%7C%20helixa%20helixa%20%7C%20hbonds%20%7C%20false%20%7C%20threshold%203.8%206%204%203.8%206%205.5"></iframe>
+      </div>
+
+      <!-- VIEW 2 -->
+      <div class="card">
+        <div class="card-head">
+          <span class="tag helix">&alpha;-helix · amphipathicity</span>
+          <h2>Polar and hydrophobic faces</h2>
+          <p class="feature">Cartoon (ribbon) backbone with side chains in ball-and-stick,
+            coloured by hydrophobicity: hydrophobic residues (Ala, Val, Leu, Ile, Phe, Gly, Pro)
+            in green, the rest in grey. Rotate to see the polar vs. hydrophobic faces.</p>
+          <p class="pdb">Myoglobin · PDB 1MBN · helix E (res 58–77)</p>
+        </div>
+        <iframe title="Interactive 3D view of an alpha helix from myoglobin (PDB 1MBN) as a cartoon ribbon with side chains in ball-and-stick coloured by hydrophobicity, hydrophobic residues green and the rest grey, revealing its polar and nonpolar faces"
+          allowfullscreen
+          src="https://www.ncbi.nlm.nih.gov/Structure/icn3d/?mmdbid=1MBN&amp;usepdbnum=1&amp;width=100%25&amp;height=100%25&amp;showtitle=0&amp;showcommand=0&amp;closepopup=1&amp;shownote=0&amp;mobilemenu=1&amp;command=select%20.A:58-77;%20show%20selection;%20zoom%20selection;%20style%20proteins%20ribbon;%20style%20sidec%20ball%20and%20stick;%20color%20hydrophobic"></iframe>
+      </div>
+
+      <!-- VIEW 3 -->
+      <div class="card">
+        <div class="card-head">
+          <span class="tag sheet">&beta;-sheet · antiparallel</span>
+          <h2>Antiparallel inter-strand H-bonds</h2>
+          <p class="feature">The N-terminal &beta;-hairpin: two strands running in opposite
+            directions. Backbone only, ball-and-stick, coloured by atom; green dashed lines are
+            the inter-strand N&ndash;H···O=C hydrogen bonds. In antiparallel sheets they sit
+            nearly straight across, in alternating narrow and wide pairs.</p>
+          <p class="pdb">Protein G B1 · PDB 1PGB · strands β1 (2–8) &amp; β2 (13–19)</p>
+        </div>
+        <iframe title="Interactive 3D view of the antiparallel beta hairpin from protein G B1 domain (PDB 1PGB), strands beta1 and beta2, backbone only in ball-and-stick coloured by atom, with inter-strand hydrogen bonds as green dashed lines running straight across in alternating narrow and wide pairs"
+          allowfullscreen
+          src="https://www.ncbi.nlm.nih.gov/Structure/icn3d/?mmdbid=1PGB&amp;usepdbnum=1&amp;width=100%25&amp;height=100%25&amp;showtitle=0&amp;showcommand=0&amp;closepopup=1&amp;shownote=0&amp;mobilemenu=1&amp;command=select%20.A:2-8,13-19%20%7C%20name%20apair;%20show%20selection;%20zoom%20selection;%20line%20graph%20interaction%20pairs%20%7C%20apair%20apair%20%7C%20hbonds%20%7C%20false%20%7C%20threshold%203.8%206%204%203.8%206%205.5;%20select%20.A:2-8,13-19;%20style%20proteins%20ball%20and%20stick;%20style%20sidec%20nothing;%20color%20atom"></iframe>
+      </div>
+
+      <!-- VIEW 4 -->
+      <div class="card">
+        <div class="card-head">
+          <span class="tag sheet">&beta;-sheet · parallel</span>
+          <h2>Parallel inter-strand H-bonds</h2>
+          <p class="feature">Two strands running the <em>same</em> direction (β1 and β5 of
+            ubiquitin's mixed sheet). Backbone only, ball-and-stick, coloured by atom; here the
+            green dashed hydrogen bonds run at a slant and are evenly spaced — the tell-tale
+            contrast with the antiparallel pattern beside it.</p>
+          <p class="pdb">Ubiquitin · PDB 1UBQ · strands β1 (2–7) &amp; β5 (66–72)</p>
+        </div>
+        <iframe title="Interactive 3D view of a parallel beta strand pair from ubiquitin (PDB 1UBQ), strands beta1 and beta5, backbone only in ball-and-stick coloured by atom, with evenly spaced slanted inter-strand hydrogen bonds shown as green dashed lines"
+          allowfullscreen
+          src="https://www.ncbi.nlm.nih.gov/Structure/icn3d/?mmdbid=1UBQ&amp;usepdbnum=1&amp;width=100%25&amp;height=100%25&amp;showtitle=0&amp;showcommand=0&amp;closepopup=1&amp;shownote=0&amp;mobilemenu=1&amp;command=select%20.A:2-7,66-72%20%7C%20name%20ppair;%20show%20selection;%20zoom%20selection;%20line%20graph%20interaction%20pairs%20%7C%20ppair%20ppair%20%7C%20hbonds%20%7C%20false%20%7C%20threshold%203.8%206%204%203.8%206%205.5;%20select%20.A:2-7,66-72;%20style%20proteins%20ball%20and%20stick;%20style%20sidec%20nothing;%20color%20atom"></iframe>
+      </div>
+
+      <!-- VIEW 5 -->
+      <div class="card">
+        <div class="card-head">
+          <span class="tag sheet">&beta;-sheet · amphipathic</span>
+          <h2>Side-chain orientation &amp; sheet faces</h2>
+          <p class="feature">The full four-stranded sheet with side chains in ball-and-stick,
+            coloured by hydrophobicity (hydrophobic green, the rest grey). Because side chains
+            alternate above and below the sheet, one face is hydrophobic — it packs against the
+            α-helix in the core — and the other is polar. Rotate to see the two faces.</p>
+          <p class="pdb">Protein G B1 · PDB 1PGB · sheet strands 2–8, 13–19, 42–46, 51–55</p>
+        </div>
+        <iframe title="Interactive 3D view of the amphipathic four-stranded beta sheet of protein G B1 domain (PDB 1PGB), cartoon with side chains in ball-and-stick coloured by hydrophobicity, showing one hydrophobic green face and one polar grey face as side chains alternate above and below the sheet"
+          allowfullscreen
+          src="https://www.ncbi.nlm.nih.gov/Structure/icn3d/?mmdbid=1PGB&amp;usepdbnum=1&amp;width=100%25&amp;height=100%25&amp;showtitle=0&amp;showcommand=0&amp;closepopup=1&amp;shownote=0&amp;mobilemenu=1&amp;command=select%20.A:2-8,13-19,42-46,51-55;%20show%20selection;%20zoom%20selection;%20style%20proteins%20ribbon;%20style%20sidec%20ball%20and%20stick;%20color%20hydrophobic"></iframe>
+      </div>
+
+    </section>
+  </div>
+</div>
+</body>
+</html>
