@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enzyme kinetics — Michaelis–Menten</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    --series1:#1d4ed8; --series2:#a8420a; --enz:#475569; --enz-dark:#1e293b; --inhib:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:65ch;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:1rem;margin:0 0 14px;font-weight:700;}
+  .control{margin-bottom:22px;} .control:last-child{margin-bottom:0;}
+  .control>label{display:block;font-weight:600;margin-bottom:8px;font-size:.95rem;}
+  .readout{font-variant-numeric:tabular-nums;color:var(--ink-muted);font-weight:400;}
+  .slider-row{display:flex;align-items:center;gap:10px;}
+  .stepbtn{appearance:none;border:2px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:1.2rem;font-weight:700;line-height:1;width:44px;height:44px;border-radius:var(--radius);cursor:pointer;flex:none;}
+  .stepbtn:hover{border-color:var(--accent);}
+  input[type=range]{flex:1;height:44px;accent-color:var(--accent);cursor:pointer;}
+  fieldset{border:0;margin:0;padding:0;}
+  legend{font-weight:600;margin-bottom:8px;font-size:.95rem;padding:0;}
+  .radios{display:flex;flex-direction:column;gap:8px;}
+  .radio{display:flex;align-items:center;gap:10px;border:2px solid var(--border);background:var(--surface);border-radius:var(--radius);padding:10px 12px;cursor:pointer;min-height:44px;}
+  .radio:hover{border-color:var(--accent);}
+  .radio input{width:20px;height:20px;accent-color:var(--accent);flex:none;}
+  .radio.checked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+  .btnrow{display:flex;gap:10px;}
+  .btn{appearance:none;font:inherit;font-weight:600;min-height:44px;padding:0 18px;border-radius:var(--radius);cursor:pointer;border:2px solid var(--accent);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn:hover{filter:brightness(.96);}
+  button:focus-visible,input:focus-visible,.radio:focus-within{outline:3px solid var(--focus);outline-offset:2px;}
+  canvas{width:100%;height:auto;display:block;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:.86rem;color:var(--ink-muted);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .swatch{width:14px;height:14px;flex:none;} .swatch.circle{border-radius:50%;}
+  .mech{margin-top:12px;font-size:.88rem;color:var(--ink);background:color-mix(in srgb,var(--inhib) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--inhib) 30%,var(--border));border-radius:var(--radius);padding:10px 12px;}
+  .plot h3{margin:0 0 6px;font-size:.95rem;font-weight:700;}
+  .plot svg{width:100%;height:auto;display:block;}
+  .viewtoggle{display:inline-flex;gap:6px;margin:0 0 12px;}
+  .viewtoggle button{appearance:none;border:2px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:.82rem;font-weight:600;padding:8px 14px;min-height:40px;border-radius:var(--radius);cursor:pointer;}
+  .viewtoggle button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));}
+  .readout-box{padding:14px 16px;border-radius:var(--radius);background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));font-size:.95rem;}
+  .readout-box strong{font-variant-numeric:tabular-nums;}
+  .text-alt{margin-top:14px;font-size:.9rem;color:var(--ink-muted);}
+  .note{margin-top:10px;font-size:.82rem;color:var(--ink-muted);}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sim">
+    <div class="sim-head">
+      <h1>Enzyme kinetics: Michaelis–Menten</h1>
+      <p>Enzymes (grey) move through solution and capture substrate (blue) at their active site, forming an ES complex (the enzyme darkens) before releasing product (orange). Substrate becomes product <strong>only</strong> when it is processed at an active site, and every complex that forms goes on to release its product. The progress plot tracks the product actually formed.</p>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2>Controls</h2>
+
+          <div class="control">
+            <label for="sub">Substrate concentration <span class="readout">(<span id="subVal">50</span> mM)</span></label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="subDown" aria-label="Decrease substrate concentration by 5 mM">&minus;</button>
+              <input type="range" id="sub" min="0" max="100" step="5" value="50" aria-describedby="subHint">
+              <button type="button" class="stepbtn" id="subUp" aria-label="Increase substrate concentration by 5 mM">+</button>
+            </div>
+            <p class="vh" id="subHint">Use the plus and minus buttons or the arrow keys to change the value without dragging.</p>
+          </div>
+
+          <div class="control">
+            <fieldset>
+              <legend>Inhibitor</legend>
+              <div class="radios" id="inhibGroup">
+                <label class="radio checked"><input type="radio" name="inhib" value="none" checked> None</label>
+                <label class="radio"><input type="radio" name="inhib" value="comp"> Competitive (binds free enzyme)</label>
+                <label class="radio"><input type="radio" name="inhib" value="noncomp"> Non-competitive (binds E and ES equally)</label>
+                <label class="radio"><input type="radio" name="inhib" value="uncomp"> Uncompetitive (binds ES only)</label>
+                <label class="radio"><input type="radio" name="inhib" value="mixed"> Mixed (binds E and ES unequally)</label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="control">
+            <label for="speed">Animation speed <span class="readout">(<span id="speedVal">1.00</span>×)</span></label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="speedDown" aria-label="Decrease animation speed">&minus;</button>
+              <input type="range" id="speed" min="0.25" max="3" step="0.25" value="1" aria-describedby="speedHint">
+              <button type="button" class="stepbtn" id="speedUp" aria-label="Increase animation speed">+</button>
+            </div>
+            <p class="vh" id="speedHint">Use the plus and minus buttons or the arrow keys to change the speed without dragging.</p>
+          </div>
+
+          <div class="btnrow">
+            <button type="button" class="btn btn-primary" id="playBtn" aria-pressed="true">Pause animation</button>
+            <button type="button" class="btn btn-ghost" id="resetBtn">Reset</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Reaction view</h2>
+          <canvas id="rxn" width="440" height="280" role="img"
+                  aria-label="Animated solution. Grey enzymes move and bind blue substrate at their active site, darkening to form an ES complex, then release orange product. Substrate only becomes product at an active site."></canvas>
+          <div class="legend" aria-hidden="true" id="legend">
+            <span><span class="swatch circle" style="background:var(--series1)"></span>Substrate</span>
+            <span><span class="swatch" style="background:var(--series2)"></span>Product</span>
+            <span><span class="swatch circle" style="background:var(--enz)"></span>Enzyme</span>
+            <span id="legInhib" style="display:none"><span class="swatch circle" style="background:var(--inhib)"></span><span id="legInhibTxt">Inhibitor</span></span>
+          </div>
+          <p class="mech" id="mech" aria-live="polite">No inhibitor: every active site is free to turn over substrate.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel plot">
+          <h3 id="ratePlotTitle">Rate vs substrate concentration</h3>
+          <div class="viewtoggle" role="group" aria-label="Choose plot type">
+            <button type="button" id="viewMM" aria-pressed="true">Michaelis–Menten</button>
+            <button type="button" id="viewLB" aria-pressed="false">Lineweaver–Burk</button>
+          </div>
+          <svg id="plotMM" viewBox="0 0 320 190" role="img"
+               aria-label="Michaelis–Menten curve of reaction rate against substrate concentration, with a dashed uninhibited reference, a solid current-condition curve, and the current operating point marked."></svg>
+          <div class="legend" aria-hidden="true">
+            <span><svg width="26" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="var(--series2)" stroke-width="2.5" stroke-dasharray="5 4"/></svg>No inhibitor (reference)</span>
+            <span><svg width="26" height="10"><line x1="0" y1="5" x2="26" y2="5" stroke="var(--series1)" stroke-width="3"/></svg>Current condition</span>
+          </div>
+          <div class="text-alt" id="mmAlt"></div>
+        </div>
+
+        <div class="panel plot">
+          <h3>Product formed over time</h3>
+          <svg id="plotTime" viewBox="0 0 320 170" role="img"
+               aria-label="Progress curve of the product actually formed over time. It rises fast at first then levels off as substrate is consumed, plateauing at the initial substrate concentration. A dashed tangent shows the initial velocity."></svg>
+          <div class="text-alt" id="timeAlt"></div>
+        </div>
+
+        <div class="panel">
+          <div class="readout-box" aria-live="polite">
+            Initial rate at these settings: <strong><span id="rateVal">66.7</span> µmol·min⁻¹</strong>
+            <div class="note" id="motionNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Quantitative model ---------- */
+const Vmax=100, Km=25;
+let S=50, inhib="none", speed=1;
+function inhibParams(){            // alpha scales the free-E (Km) term; alphaP scales the ES term
+  if(inhib==="comp")    return {a:2.5, ap:1};
+  if(inhib==="uncomp")  return {a:1,   ap:2.5};
+  if(inhib==="noncomp") return {a:2.5, ap:2.5};
+  if(inhib==="mixed")   return {a:3,   ap:1.5};
+  return {a:1, ap:1};
+}
+function apparent(){
+  const p=inhibParams();
+  return { km:(p.a/p.ap)*Km, vmax:Vmax/p.ap };
+}
+function inhibLetter(){return ({comp:'C',noncomp:'N',uncomp:'U',mixed:'M'})[inhib]||'';}
+function rate(s,p){const a=p||apparent();return a.vmax*s/(a.km+s);}
+
+const cs=getComputedStyle(document.documentElement),gc=v=>cs.getPropertyValue(v).trim();
+const COL={s1:gc('--series1'),s2:gc('--series2'),enz:gc('--enz'),enzD:gc('--enz-dark'),
+  inhib:gc('--inhib'),ink:gc('--ink-muted'),surf:gc('--surface'),panel:gc('--surface-2')};
+
+/* ---------- Progress state (plot reads ACTUAL product formed) ---------- */
+const DT=0.02;
+let rt=0, acc=0, pdata=[[0,0]], Tend=5, done=false;
+let kmDisp=Km, vmaxDisp=Vmax;   // eased values so the curve and markers glide when the inhibitor changes
+let plotMode='mm';              // 'mm' = Michaelis–Menten, 'lb' = Lineweaver–Burk
+function computeTend(){
+  if(S<=0||N0===0) return 1;
+  const targetP=S*(1-0.7/N0);
+  let t=0,pp=0,guard=0;
+  while(pp<targetP && guard++<200000){const a=apparent();const St=Math.max(S-pp,0);pp+=a.vmax*St/(a.km+St)*DT;t+=DT;}
+  return Math.max(t*1.08,0.2);
+}
+function resetProgress(){
+  rt=0; acc=0; pdata=[[0,0]]; done=false; Tend=computeTend();
+  if(reduceMotion){ // static accurate curve, run to completion, when motion is off
+    const targetP=(S>0&&N0>0)?S*(1-0.7/N0):0; let tt=0,pp=0,guard=0;
+    while(pp<targetP && guard++<200000){const a=apparent();const St=Math.max(S-pp,0);pp=Math.min(pp+a.vmax*St/(a.km+St)*DT,S);tt+=DT;pdata.push([tt,pp]);}
+    pdata.push([tt,S>0?S:0]); rt=tt; done=true;
+  }
+  drawTime();
+}
+
+/* ---------- Controls ---------- */
+const subS=document.getElementById('sub'),subVal=document.getElementById('subVal'),rateVal=document.getElementById('rateVal');
+const spS=document.getElementById('speed'),spVal=document.getElementById('speedVal');
+function refresh(){
+  S=+subS.value; speed=+spS.value;
+  subVal.textContent=S; spVal.textContent=speed.toFixed(2);
+  rateVal.textContent=rate(S).toFixed(1);
+  if(!running||reduceMotion){ const a=apparent(); kmDisp=a.km; vmaxDisp=a.vmax; }
+  drawRate(); updateAlts();
+}
+subS.addEventListener('input',()=>{refresh();reseedParticles();resetProgress();});
+spS.addEventListener('input',refresh);
+document.getElementById('subUp').addEventListener('click',()=>{subS.value=Math.min(100,+subS.value+5);refresh();reseedParticles();resetProgress();});
+document.getElementById('subDown').addEventListener('click',()=>{subS.value=Math.max(0,+subS.value-5);refresh();reseedParticles();resetProgress();});
+document.getElementById('speedUp').addEventListener('click',()=>{spS.value=Math.min(3,+spS.value+0.25);refresh();});
+document.getElementById('speedDown').addEventListener('click',()=>{spS.value=Math.max(0.25,+spS.value-0.25);refresh();});
+document.getElementById('inhibGroup').addEventListener('change',e=>{
+  inhib=e.target.value;
+  document.querySelectorAll('#inhibGroup .radio').forEach(l=>l.classList.toggle('checked',l.querySelector('input').checked));
+  setInhibitorScene(); refresh(); resetProgress();
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  subS.value=50; spS.value=1; document.querySelector('#inhibGroup input[value=none]').checked=true; inhib="none";
+  document.querySelectorAll('#inhibGroup .radio').forEach(l=>l.classList.toggle('checked',l.querySelector('input').checked));
+  buildEnzymes(); reseedParticles(); setInhibitorScene(); refresh(); resetProgress();
+  if(!running||reduceMotion) frame();
+});
+
+/* ---------- SVG plots ---------- */
+function el(t,a){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function axes(svg,W,H,m,xlabel,ylabel){
+  svg.appendChild(el('line',{x1:m.l,y1:H-m.b,x2:W-m.r,y2:H-m.b,stroke:COL.ink,'stroke-width':1.5}));
+  svg.appendChild(el('line',{x1:m.l,y1:m.t,x2:m.l,y2:H-m.b,stroke:COL.ink,'stroke-width':1.5}));
+  let xl=el('text',{x:(m.l+W-m.r)/2,y:H-5,fill:COL.ink,'font-size':11,'text-anchor':'middle','font-family':'system-ui'});xl.textContent=xlabel;svg.appendChild(xl);
+  let yl=el('text',{x:11,y:(m.t+H-m.b)/2,fill:COL.ink,'font-size':11,'text-anchor':'middle','font-family':'system-ui',transform:'rotate(-90 11 '+((m.t+H-m.b)/2)+')'});yl.textContent=ylabel;svg.appendChild(yl);
+}
+function drawMM(){
+  const svg=document.getElementById('plotMM');svg.innerHTML='';
+  const Wd=320,Hd=190,m={l:36,r:14,t:12,b:30};axes(svg,Wd,Hd,m,'[Substrate]  (mM)','Rate');
+  const fx=s=>m.l+(s/100)*(Wd-m.l-m.r), fy=v=>(Hd-m.b)-(v/Vmax)*(Hd-m.t-m.b);
+  // uninhibited reference (dashed)
+  let dRef="";for(let s=0;s<=100;s+=2){const v=Vmax*s/(Km+s);dRef+=(s===0?"M":"L")+fx(s).toFixed(1)+" "+fy(v).toFixed(1);}
+  svg.appendChild(el('path',{d:dRef,fill:'none',stroke:COL.s2,'stroke-width':2.5,'stroke-dasharray':'6 5'}));
+  // current condition (solid) using eased apparent values
+  const vA=vmaxDisp, kA=kmDisp;
+  let dCur="";for(let s=0;s<=100;s+=2){const v=vA*s/(kA+s);dCur+=(s===0?"M":"L")+fx(s).toFixed(1)+" "+fy(v).toFixed(1);}
+  svg.appendChild(el('path',{d:dCur,fill:'none',stroke:COL.s1,'stroke-width':3}));
+  // --- Vmax / half-Vmax / Km markers (track the current condition) ---
+  const mk=COL.ink;
+  svg.appendChild(el('line',{x1:m.l,y1:fy(vA),x2:Wd-m.r,y2:fy(vA),stroke:mk,'stroke-width':1,'stroke-dasharray':'2 3'}));
+  const lV=el('text',{x:Wd-m.r,y:fy(vA)-3,fill:mk,'font-size':9,'text-anchor':'end','font-family':'system-ui'});lV.textContent='Vmax';svg.appendChild(lV);
+  svg.appendChild(el('line',{x1:m.l,y1:fy(vA/2),x2:fx(kA),y2:fy(vA/2),stroke:mk,'stroke-width':1,'stroke-dasharray':'2 3'}));
+  const lH=el('text',{x:m.l+3,y:fy(vA/2)-3,fill:mk,'font-size':9,'text-anchor':'start','font-family':'system-ui'});lH.textContent='\u00BDVmax';svg.appendChild(lH);
+  svg.appendChild(el('line',{x1:fx(kA),y1:fy(0),x2:fx(kA),y2:fy(vA/2),stroke:mk,'stroke-width':1,'stroke-dasharray':'2 3'}));
+  const lK=el('text',{x:fx(kA),y:fy(0)+11,fill:mk,'font-size':9,'text-anchor':'middle','font-family':'system-ui'});lK.textContent='Km';svg.appendChild(lK);
+  svg.appendChild(el('circle',{cx:fx(kA),cy:fy(vA/2),r:3,fill:mk}));
+  // operating point at current [S]
+  svg.appendChild(el('circle',{cx:fx(S),cy:fy(vA*S/(kA+S)),r:5,fill:COL.s1,stroke:COL.panel,'stroke-width':2}));
+}
+function animateMM(){
+  const a=apparent(), dk=a.km-kmDisp, dv=a.vmax-vmaxDisp;
+  if(Math.abs(dk)>0.1||Math.abs(dv)>0.1){ kmDisp+=dk*0.2; vmaxDisp+=dv*0.2; drawRate(); }
+}
+function drawLB(){
+  const svg=document.getElementById('plotMM');svg.innerHTML='';
+  const Wd=320,Hd=190,m={l:42,r:16,t:14,b:34};
+  const xMin=-0.12,xMax=0.20,yMax=0.17;
+  const fx=x=>m.l+((x-xMin)/(xMax-xMin))*(Wd-m.l-m.r);
+  const fy=y=>(Hd-m.b)-(y/yMax)*(Hd-m.t-m.b);
+  svg.appendChild(el('line',{x1:fx(xMin),y1:fy(0),x2:fx(xMax),y2:fy(0),stroke:COL.ink,'stroke-width':1.5}));   // x-axis (y=0)
+  svg.appendChild(el('line',{x1:fx(0),y1:fy(0),x2:fx(0),y2:fy(yMax),stroke:COL.ink,'stroke-width':1.5}));       // y-axis (x=0)
+  const xl=el('text',{x:(m.l+Wd-m.r)/2,y:Hd-5,fill:COL.ink,'font-size':11,'text-anchor':'middle','font-family':'system-ui'});xl.textContent='1/[S]  (mM\u207B\u00B9)';svg.appendChild(xl);
+  const yl=el('text',{x:12,y:(m.t+Hd-m.b)/2,fill:COL.ink,'font-size':11,'text-anchor':'middle','font-family':'system-ui',transform:'rotate(-90 12 '+((m.t+Hd-m.b)/2)+')'});yl.textContent='1/v';svg.appendChild(yl);
+  function drawLine(km,vmax,stroke,dash){
+    const slope=km/vmax, yint=1/vmax, xi=-1/km;
+    let x1=Math.max(xi,xMin), y1=slope*x1+yint, x2=xMax, y2=slope*x2+yint;
+    if(y2>yMax){ x2=(yMax-yint)/slope; y2=yMax; }
+    const attrs={x1:fx(x1),y1:fy(y1),x2:fx(x2),y2:fy(y2),stroke:stroke,'stroke-width':dash?2.5:3};
+    if(dash)attrs['stroke-dasharray']='6 5';
+    svg.appendChild(el('line',attrs));
+  }
+  drawLine(Km,Vmax,COL.s2,true);            // uninhibited reference (dashed)
+  drawLine(kmDisp,vmaxDisp,COL.s1,false);   // current condition (solid, eased)
+  const yint=1/vmaxDisp, xi=-1/kmDisp;
+  if(yint<=yMax){ svg.appendChild(el('circle',{cx:fx(0),cy:fy(yint),r:3.5,fill:COL.s1}));
+    const t=el('text',{x:fx(0)+5,y:fy(yint)-3,fill:COL.ink,'font-size':9,'font-family':'system-ui'});t.textContent='1/Vmax';svg.appendChild(t);}
+  if(xi>=xMin){ svg.appendChild(el('circle',{cx:fx(xi),cy:fy(0),r:3.5,fill:COL.s1}));
+    const t=el('text',{x:fx(xi),y:fy(0)+11,fill:COL.ink,'font-size':9,'text-anchor':'middle','font-family':'system-ui'});t.textContent='\u22121/Km';svg.appendChild(t);}
+  if(S>0){ const a=apparent(),v=rate(S,a),ox=1/S,oy=1/v;
+    if(ox>=xMin&&ox<=xMax&&oy<=yMax) svg.appendChild(el('circle',{cx:fx(ox),cy:fy(oy),r:5,fill:COL.s1,stroke:COL.panel,'stroke-width':2})); }
+}
+function drawRate(){
+  const svg=document.getElementById('plotMM'), title=document.getElementById('ratePlotTitle');
+  if(plotMode==='lb'){ drawLB(); title.textContent='Lineweaver–Burk (double reciprocal)';
+    svg.setAttribute('aria-label','Lineweaver–Burk double-reciprocal plot of 1/v against 1/[S]. The y-intercept is 1/Vmax, the x-intercept is minus 1/Km, and the slope is Km/Vmax. A dashed line shows the uninhibited reference and a solid line the current condition.'); }
+  else { drawMM(); title.textContent='Rate vs substrate concentration';
+    svg.setAttribute('aria-label','Michaelis–Menten curve of reaction rate against substrate concentration, with a dashed uninhibited reference, a solid current-condition curve, Vmax, half-Vmax and Km markers, and the current operating point.'); }
+}
+function setPlotMode(mode){
+  plotMode=mode;
+  document.getElementById('viewMM').setAttribute('aria-pressed',String(mode==='mm'));
+  document.getElementById('viewLB').setAttribute('aria-pressed',String(mode==='lb'));
+  drawRate(); updateAlts();
+}
+document.getElementById('viewMM').addEventListener('click',()=>setPlotMode('mm'));
+document.getElementById('viewLB').addEventListener('click',()=>setPlotMode('lb'));
+function drawTime(){
+  const svg=document.getElementById('plotTime');svg.innerHTML='';
+  const Wd=320,Hd=170,m={l:36,r:12,t:12,b:30};axes(svg,Wd,Hd,m,'Time (min)','Product (mM)');
+  const axisT=Math.max(Tend,0.2);
+  const fx=t=>m.l+(t/axisT)*(Wd-m.l-m.r), fy=Pv=>(Hd-m.b)-(Pv/100)*(Hd-m.t-m.b);
+  [0,axisT/2,axisT].forEach(tk=>{const t=el('text',{x:fx(tk),y:Hd-18,fill:COL.ink,'font-size':9,'text-anchor':'middle','font-family':'system-ui'});t.textContent=tk.toFixed(1);svg.appendChild(t);});
+  const v0=rate(S);
+  if(v0>0){ let tEnd=Math.min(axisT*0.55, S/v0); if(!isFinite(tEnd)||tEnd<=0)tEnd=axisT*0.2;
+    svg.appendChild(el('line',{x1:fx(0),y1:fy(0),x2:fx(tEnd),y2:fy(v0*tEnd),stroke:COL.ink,'stroke-width':1.3,'stroke-dasharray':'4 3'}));
+    const lbl=el('text',{x:fx(tEnd)+3,y:fy(v0*tEnd)-2,fill:COL.ink,'font-size':10,'font-family':'system-ui'});lbl.textContent='V\u2080';svg.appendChild(lbl);
+  }
+  let d="";pdata.forEach((pt,i)=>{d+=(i===0?"M":"L")+fx(pt[0]).toFixed(1)+" "+fy(pt[1]).toFixed(1);});
+  svg.appendChild(el('path',{d:d,fill:'none',stroke:COL.s1,'stroke-width':3,'stroke-linejoin':'round'}));
+}
+function updateAlts(){
+  const a=apparent(),v=rate(S,a);
+  const km=a.km.toFixed(0), vm=a.vmax.toFixed(0);
+  const kinds={
+    none:"no inhibitor",
+    comp:"a competitive inhibitor (apparent Km raised to "+km+" mM, Vmax unchanged)",
+    uncomp:"an uncompetitive inhibitor (apparent Vmax lowered to "+vm+" and Km lowered to "+km+" mM)",
+    noncomp:"a non-competitive inhibitor (apparent Vmax lowered to "+vm+" µmol·min⁻¹, Km unchanged)",
+    mixed:"a mixed inhibitor (apparent Vmax lowered to "+vm+" and apparent Km raised to "+km+" mM)"
+  };
+  if(plotMode==='lb'){
+    const pat={
+      none:"Only the reference line is shown.",
+      comp:"The two lines meet on the y-axis (shared 1/Vmax); the inhibited line is steeper.",
+      noncomp:"The two lines meet on the x-axis (shared \u22121/Km); the inhibited line is steeper with a higher y-intercept.",
+      uncomp:"The two lines are parallel (same slope) with a higher y-intercept.",
+      mixed:"The two lines intersect above the x-axis and to the left of the y-axis."
+    };
+    document.getElementById('mmAlt').textContent =
+      "Lineweaver–Burk double-reciprocal plot: y-intercept = 1/Vmax, x-intercept = \u22121/Km, slope = Km/Vmax. The dashed line is uninhibited; the solid line is the current condition with "+kinds[inhib]+". "+pat[inhib];
+  } else {
+    document.getElementById('mmAlt').textContent =
+      "Rate rises steeply at low substrate and approaches a maximum (Vmax); the half-maximal rate occurs at [S] = Km. With "+kinds[inhib]+". At [S] = "+S+
+      " mM the current rate is "+v.toFixed(1)+" µmol·min⁻¹, versus "+(Vmax*S/(Km+S)).toFixed(1)+" uninhibited.";
+  }
+  document.getElementById('timeAlt').textContent =
+    "Product accumulates quickly at first (initial slope = V\u2080 = "+v.toFixed(1)+" µmol·min⁻¹) then slows as substrate is consumed, plateauing at the initial substrate concentration of "+S+" mM.";
+}
+
+/* ---------- Mechanism animation (agent-based) ---------- */
+const cv=document.getElementById('rxn'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height,ER=17,DWELL=7,REACH=30;
+let enzymes=[],parts=[],inhibitors=[],running=true,N0=0;
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const playBtn=document.getElementById('playBtn'),motionNote=document.getElementById('motionNote');
+
+function buildEnzymes(){
+  enzymes=[];
+  const pos=[[110,80],[300,70],[210,150],[90,200],[330,200]];
+  for(const pc of pos) enzymes.push({x:pc[0],y:pc[1],vx:(Math.random()-.5)||.3,vy:(Math.random()-.5)||.3,
+    site:null,sref:null,cTimer:0,dwell:0,allo:null,atimer:0});
+}
+function reseedParticles(){
+  const n=Math.round(S/100*36);
+  parts=[];
+  for(let i=0;i<n;i++)parts.push({x:14+Math.random()*(W-28),y:14+Math.random()*(H-28),
+    vx:(Math.random()-.5)*1.2,vy:(Math.random()-.5)*1.2,type:'S',held:false});
+  N0=parts.length;
+  enzymes.forEach(e=>{e.site=null;e.sref=null;e.dwell=0;});
+}
+function setInhibitorScene(){
+  inhibitors=[];
+  enzymes.forEach(e=>{if(e.site==='C'){e.site=null;e.sref=null;} e.allo=null; e.atimer=0;});
+  const li=document.getElementById('legInhib'),lt=document.getElementById('legInhibTxt'),mech=document.getElementById('mech');
+  if(inhib==='none'){li.style.display='none';mech.textContent='No inhibitor: every active site is free to turn over substrate.';return;}
+  li.style.display='inline-flex';
+  lt.textContent=({comp:'Competitive inhibitor (C)',noncomp:'Non-competitive inhibitor (N)',uncomp:'Uncompetitive inhibitor (U)',mixed:'Mixed inhibitor (M)'})[inhib];
+  mech.textContent=({
+    comp:'Competitive inhibitor (C) competes with substrate for the active site of the free enzyme. Raising substrate outcompetes it, so Vmax is unchanged but apparent Km rises.',
+    noncomp:'Non-competitive inhibitor (N) binds an allosteric site on the free enzyme or the ES complex equally, taking it out of action, so Vmax falls while Km is unchanged.',
+    uncomp:'Uncompetitive inhibitor (U) binds only the ES complex and locks it so it cannot turn over. Apparent Vmax and Km both fall by the same factor.',
+    mixed:'Mixed inhibitor (M) binds an allosteric site on both the free enzyme and the ES complex, with different affinities, so Vmax falls and (here) apparent Km rises.'
+  })[inhib];
+  for(let i=0;i<5;i++)inhibitors.push({x:14+Math.random()*(W-28),y:14+Math.random()*(H-28),
+    vx:(Math.random()-.5)*1.3,vy:(Math.random()-.5)*1.3,bound:-1,host:null,cool:0});
+}
+
+function drift(o,sp){o.x+=o.vx*sp;o.y+=o.vy*sp;
+  if(o.x<10||o.x>W-10)o.vx*=-1; if(o.y<10||o.y>H-10)o.vy*=-1;
+  o.x=Math.max(10,Math.min(W-10,o.x)); o.y=Math.max(10,Math.min(H-10,o.y));}
+function dist(ax,ay,bx,by){return Math.hypot(ax-bx,ay-by);}
+function sitePos(e){const a=Math.atan2(e.vy,e.vx);return {x:e.x+Math.cos(a)*ER,y:e.y+Math.sin(a)*ER,a};}
+function alloPos(e){const a=Math.atan2(e.vy,e.vx)+2.3;return {x:e.x+Math.cos(a)*ER,y:e.y+Math.sin(a)*ER};}
+
+function update(sp){
+  enzymes.forEach(e=>drift(e,sp*0.6));
+  parts.forEach(p=>{ if(!p.held) drift(p,sp); });
+
+  enzymes.forEach(e=>{
+    if(e.site==='C'){ e.cTimer-=sp; if(e.cTimer<=0){ const m=inhibitors.find(x=>x.bound===-2&&x.host===e); if(m){m.bound=-1;m.host=null;m.cool=36;const a=Math.atan2(e.vy,e.vx);m.vx=Math.cos(a)*1.6;m.vy=Math.sin(a)*1.6;} e.site=null; } }
+    if(e.allo){ e.atimer-=sp; if(e.atimer<=0){ const m=inhibitors.find(x=>x.bound===-3&&x.host===e); if(m){m.bound=-1;m.host=null;m.cool=36;const ap=alloPos(e);m.vx=(ap.x-e.x)*0.1;m.vy=(ap.y-e.y)*0.1;} e.allo=null; } }
+    if(e.site==='S'){            // ES complex: hold substrate; turn over after the dwell unless trapped by a bound inhibitor
+      const as=sitePos(e); e.sref.x=as.x; e.sref.y=as.y;
+      if(!e.allo){ e.dwell-=sp;
+        if(e.dwell<=0){ const p=e.sref; p.type='P'; p.held=false; p.vx=Math.cos(as.a)*1.6; p.vy=Math.sin(as.a)*1.6; e.site=null; e.sref=null; } }
+    }
+  });
+
+  inhibitors.forEach(m=>{
+    if(m.bound===-2||m.bound===-3){ if(m.host){const ps=(inhib==='comp')?sitePos(m.host):alloPos(m.host);m.x=ps.x;m.y=ps.y;} return; }
+    drift(m,sp);
+    if(m.cool>0){ m.cool-=sp; return; }
+    for(const e of enzymes){
+      if(inhib==='comp'){ const as=sitePos(e);
+        if(e.site===null && dist(m.x,m.y,as.x,as.y)<15){ e.site='C'; e.cTimer=64; m.bound=-2; m.host=e; break; } }
+      else { const ap=alloPos(e); let ok=false;
+        if(inhib==='noncomp') ok=(e.allo===null && (e.site===null||e.site==='S'));   // E or ES, equally
+        else if(inhib==='uncomp') ok=(e.allo===null && e.site==='S');                 // ES only
+        else if(inhib==='mixed') ok=(e.allo===null && (e.site===null||e.site==='S')); // E or ES
+        if(ok && dist(m.x,m.y,ap.x,ap.y)<15){ e.allo=inhibLetter(); e.atimer=74; m.bound=-3; m.host=e; break; } }
+    }
+  });
+}
+
+/* Start ONE catalytic cycle at a free, working enzyme that has a substrate within reach.
+   Paced by the MM rate; every cycle started is guaranteed to finish (see update). */
+function initiateCycle(){
+  for(const e of enzymes){
+    if(e.site!==null || e.allo) continue;
+    const as=sitePos(e);
+    let best=null,bd=REACH;
+    for(const p of parts){ if(p.type==='S'&&!p.held){ const d=dist(as.x,as.y,p.x,p.y); if(d<bd){bd=d;best=p;} } }
+    if(best){ best.held=true; e.site='S'; e.sref=best; e.dwell=DWELL; return true; }
+  }
+  return false;
+}
+
+function drawEnzyme(e){
+  const outOfAction = (e.site===null && e.allo);   // free enzyme taken out allosterically
+  const a=Math.atan2(e.vy,e.vx);
+  ctx.fillStyle = outOfAction ? '#94a3b8' : (e.site==='S'? COL.enzD : COL.enz);
+  ctx.beginPath(); ctx.arc(e.x,e.y,ER, a+0.5, a-0.5); ctx.lineTo(e.x,e.y); ctx.closePath(); ctx.fill();
+  const ap=alloPos(e);
+  ctx.fillStyle=outOfAction?'#94a3b8':COL.enz; ctx.beginPath();ctx.arc(ap.x,ap.y,5,0,7);ctx.fill();
+}
+function drawParticle(p){
+  if(p.type==='S'){ctx.fillStyle=COL.s1;ctx.beginPath();ctx.arc(p.x,p.y,6,0,7);ctx.fill();}
+  else{ctx.fillStyle=COL.s2;ctx.fillRect(p.x-5,p.y-5,10,10);}
+}
+function drawInhibitor(m){
+  ctx.fillStyle=COL.inhib;
+  if(inhib==='comp'){ctx.beginPath();ctx.arc(m.x,m.y,7,0,7);ctx.fill();}
+  else{ctx.save();ctx.translate(m.x,m.y);ctx.rotate(Math.PI/4);ctx.fillRect(-6,-6,12,12);ctx.restore();}
+  ctx.fillStyle="#fff";ctx.font="700 9px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText(inhibLetter(),m.x,m.y+0.5);
+}
+
+function frame(){
+  const sp = (running&&!reduceMotion) ? speed : 0;
+  if(sp>0){
+    update(sp);
+    if(!done){
+      rt+=DT*sp;
+      let remS=0; for(const p of parts) if(p.type==='S') remS++;   // substrate left (free + held)
+      const Scur = N0 ? (remS/N0)*S : 0;
+      acc += (N0 ? rate(Scur)/S*N0 : 0) * DT*sp;                    // pace cycle starts by the MM rate
+      if(acc>3) acc=3;
+      while(acc>=1){ if(initiateCycle()){ acc-=1; } else break; }
+      let countP=0; for(const p of parts) if(p.type==='P') countP++;
+      pdata.push([rt, N0 ? countP/N0*S : 0]);
+      if(remS===0) done=true;          // reaction complete: all substrate consumed
+      if(rt>Tend) Tend=rt*1.05;        // extend the time axis if the run overran the estimate
+      drawTime();
+    }
+    animateMM();
+  }
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=COL.surf;ctx.fillRect(0,0,W,H);
+  parts.forEach(p=>{if(!p.held)drawParticle(p);});
+  enzymes.forEach(drawEnzyme);
+  parts.forEach(p=>{if(p.held)drawParticle(p);});
+  inhibitors.forEach(drawInhibitor);
+  if(running&&!reduceMotion)requestAnimationFrame(frame);
+}
+function setPlay(on){running=on;playBtn.textContent=on?'Pause animation':'Play animation';playBtn.setAttribute('aria-pressed',String(on));if(on&&!reduceMotion)requestAnimationFrame(frame);else frame();}
+playBtn.addEventListener('click',()=>setPlay(!running));
+if(reduceMotion){running=false;playBtn.textContent='Play animation';playBtn.setAttribute('aria-pressed','false');motionNote.textContent='Animation is paused because your system requests reduced motion. Press Play to start it.';}
+
+/* init */
+buildEnzymes(); reseedParticles(); setInhibitorScene(); refresh(); resetProgress(); frame();
+</script>
+</body>
+</html>
