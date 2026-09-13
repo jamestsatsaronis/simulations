@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<!--
+  Reaction Coordinate Builder — enzymes, thermodynamics
+  Built on the Accessible Simulations house style ("Plain Service", light only).
+  Single self-contained file. GitHub Pages ready, iframe embeddable.
+  No build step, no storage APIs, no animation.
+-->
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction coordinate builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- House style tokens (do not edit) ---------- */
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    --series1:#1d4ed8; --series2:#a8420a; --series3:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
+
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:65ch;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--surface-2);border:1px solid var(--border);
+         border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:1rem;margin:0 0 14px;font-weight:700;}
+
+  /* control row */
+  .control{margin-bottom:22px;}
+  .control:last-child{margin-bottom:0;}
+  .control>label{display:block;font-weight:600;margin-bottom:8px;font-size:.95rem;}
+  .readout{font-variant-numeric:tabular-nums;color:var(--ink-muted);font-weight:400;}
+
+  /* slider primitive — keyboard + buttons satisfy WCAG 2.5.7 */
+  .slider-row{display:flex;align-items:center;gap:10px;}
+  .stepbtn{appearance:none;border:2px solid var(--border);background:var(--surface);
+    color:var(--ink);font:inherit;font-size:1.2rem;font-weight:700;line-height:1;
+    width:44px;height:44px;border-radius:var(--radius);cursor:pointer;flex:none;}
+  .stepbtn:hover{border-color:var(--accent);}
+  input[type=range]{flex:1;height:44px;accent-color:var(--accent);cursor:pointer;min-width:0;}
+
+  /* buttons */
+  .btnrow{display:flex;gap:10px;}
+  .btn{appearance:none;font:inherit;font-weight:600;min-height:44px;padding:0 18px;
+    border-radius:var(--radius);cursor:pointer;border:2px solid var(--accent);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn:hover{filter:brightness(.96);}
+
+  /* visible focus everywhere — WCAG 2.4.7 / 2.4.11 */
+  button:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
+
+  .plot h3{margin:0 0 6px;font-size:.95rem;font-weight:700;}
+  .plot svg{width:100%;height:auto;display:block;}
+  svg.framed{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:.86rem;color:var(--ink-muted);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .swatch{width:26px;height:0;border-top-width:3px;flex:none;}
+
+  .readout-box{padding:14px 16px;border-radius:var(--radius);
+    background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));font-size:.95rem;}
+  .readout-box strong{font-variant-numeric:tabular-nums;font-size:1.15rem;}
+  .readout-box p{margin:0 0 8px;}
+  .readout-box p:last-child{margin-bottom:0;}
+
+  .note{margin-top:10px;font-size:.9rem;color:var(--ink-muted);max-width:70ch;}
+  sup,sub{font-size:.75em;line-height:0;}
+  /* reflow at narrow widths — WCAG 1.4.10 */
+  @media (max-width:480px){
+    .wrap{padding:16px 12px 40px;}
+    .sim{padding:16px;}
+    .panel{padding:14px;}
+    .sim-head h1{font-size:1.35rem;}
+  }
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sim">
+    <div class="sim-head">
+      <h1>Reaction coordinate builder</h1>
+      <p>Set the activation barrier for the uncatalysed reaction, the barrier for the
+         enzyme-catalysed reaction, and the overall free-energy change. Watch the two
+         outputs on the right.</p>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: controls + visualisation -->
+      <div>
+        <div class="panel">
+          <h2>Controls</h2>
+
+          <div class="control">
+            <label for="dgu">Activation energy, uncatalysed &ndash; &Delta;G&#8225;
+              <span class="readout">(<span id="dguVal">90</span> kJ/mol)</span>
+            </label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="dguDown" aria-label="Decrease uncatalysed activation energy">&minus;</button>
+              <input type="range" id="dgu" min="40" max="130" step="2" value="90" aria-describedby="sliderHint">
+              <button type="button" class="stepbtn" id="dguUp" aria-label="Increase uncatalysed activation energy">+</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="dgc">Activation energy, with enzyme &ndash; &Delta;G&#8225;
+              <span class="readout">(<span id="dgcVal">40</span> kJ/mol)</span>
+            </label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="dgcDown" aria-label="Decrease catalysed activation energy">&minus;</button>
+              <input type="range" id="dgc" min="10" max="130" step="2" value="40" aria-describedby="sliderHint">
+              <button type="button" class="stepbtn" id="dgcUp" aria-label="Increase catalysed activation energy">+</button>
+            </div>
+          </div>
+
+          <div class="control">
+            <label for="dg0">Overall free-energy change &ndash; &Delta;G&prime;&deg;
+              <span class="readout">(<span id="dg0Val">0</span> kJ/mol)</span>
+            </label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="dg0Down" aria-label="Decrease overall free energy change">&minus;</button>
+              <input type="range" id="dg0" min="-30.5" max="30.5" step="0.5" value="0" aria-describedby="dg0Hint">
+              <button type="button" class="stepbtn" id="dg0Up" aria-label="Increase overall free energy change">+</button>
+            </div>
+            <p class="note" id="dg0Hint" style="margin-top:6px;">
+              The ends are &plusmn;30.5 kJ/mol, the standard
+              free-energy change for hydrolysis of ATP to ADP and P<sub>i</sub>
+            </p>
+          </div>
+
+          <p class="vh" id="sliderHint">Use the plus and minus buttons or the left and right arrow keys to change the value without dragging.</p>
+
+          <div class="btnrow">
+            <button type="button" class="btn btn-ghost" id="resetBtn">Reset to defaults</button>
+          </div>
+        </div>
+
+        <div class="panel plot">
+          <h2>Energy profile</h2>
+          <svg id="diagram" class="framed" viewBox="0 0 440 300" role="img" aria-label=""></svg>
+          <div class="legend" aria-hidden="true">
+            <span><span class="swatch" style="border-top:3px solid var(--series2);border-top-style:dashed"></span>Uncatalysed (dashed)</span>
+            <span><span class="swatch" style="border-top:3px solid var(--series1)"></span>With enzyme (solid)</span>
+          </div>
+          <p class="note">
+            k &prop; e<sup>&minus;&Delta;G&#8225;/RT</sup> and &Delta;G&prime;&deg; = &minus;RT&nbsp;ln&nbsp;K&prime;<sub>eq</sub>,
+            both at 298&nbsp;K, giving RT = 2.478 kJ/mol and one factor of ten in rate per
+            5.71 kJ/mol of barrier. The rate comparison assumes both reactions share a
+            pre-exponential factor; equilibrium proportions assume a single-substrate
+            reaction S&nbsp;&#8652;&nbsp;P. The ES and EP intermediates are not shown.
+          </p>
+        </div>
+      </div>
+
+      <!-- RIGHT: outputs -->
+      <div>
+        <div class="panel">
+          <h2>Rate of reaction</h2>
+          <div class="readout-box" aria-live="polite">
+            <p>Reaction is <strong><span id="rateVal"></span></strong> times faster with the enzyme.</p>
+            <p id="rateSub"></p>
+          </div>
+          <div class="plot" style="margin-top:14px;">
+            <svg id="rateBar" viewBox="0 0 320 92" role="img" aria-label=""></svg>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Reaction equilibrium</h2>
+          <div class="readout-box" aria-live="polite">
+            <p>Equilibrium constant <strong>K&prime;<sub>eq</sub> = <span id="keqVal"></span></strong></p>
+            <p id="keqSub"></p>
+          </div>
+          <div class="plot" style="margin-top:14px;">
+            <svg id="dirEq" viewBox="0 0 320 66" role="img" aria-label=""></svg>
+          </div>
+          <div class="plot" style="margin-top:14px;">
+            <svg id="eqBar" viewBox="0 0 320 86" role="img" aria-label=""></svg>
+          </div>
+          <p class="note">This final composition is reached whether or not the enzyme is
+             present. The enzyme changes only how long it takes to get there.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ===========================================================================
+   MODEL
+   =========================================================================== */
+const R = 8.314e-3;          // kJ per mol per K
+const T = 298;               // K
+const RT = R * T;            // 2.4776 kJ/mol
+const LN10_RT = Math.LN10 * RT;   // 5.706 kJ/mol per factor of ten
+
+const DEFAULTS = { dgu: 90, dgc: 40, dg0: 0 };
+let dgu = DEFAULTS.dgu, dgc = DEFAULTS.dgc, dg0 = DEFAULTS.dg0;
+
+const logRateEnhancement = () => (dgu - dgc) / LN10_RT;   // log10 of k_cat / k_uncat
+const keq = () => Math.exp(-dg0 / RT);
+const fracProduct = () => { const K = keq(); return K / (1 + K); };
+
+/* ---- series colours ---- */
+const css = getComputedStyle(document.documentElement);
+const COL = {
+  s1: css.getPropertyValue('--series1').trim(),
+  s2: css.getPropertyValue('--series2').trim(),
+  s3: css.getPropertyValue('--series3').trim(),
+  ink: css.getPropertyValue('--ink').trim(),
+  muted: css.getPropertyValue('--ink-muted').trim(),
+  border: css.getPropertyValue('--border').trim(),
+  surf: css.getPropertyValue('--surface').trim()
+};
+
+/* ---- number formatting ---- */
+const SUP = {'0':'\u2070','1':'\u00b9','2':'\u00b2','3':'\u00b3','4':'\u2074',
+             '5':'\u2075','6':'\u2076','7':'\u2077','8':'\u2078','9':'\u2079','-':'\u207b'};
+function sup(n){ return String(n).split('').map(c => SUP[c] || c).join(''); }
+
+/* Returns {glyph, spoken} for a positive number. */
+function fmt(v){
+  if (!isFinite(v) || v <= 0) return { glyph: '\u2014', spoken: 'not defined' };
+  if (v >= 0.01 && v < 1000) {
+    const s = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
+    return { glyph: s, spoken: s };
+  }
+  const e = Math.floor(Math.log10(v));
+  const m = v / Math.pow(10, e);
+  return { glyph: m.toFixed(1) + ' \u00d7 10' + sup(e),
+           spoken: m.toFixed(1) + ' times ten to the power ' + e };
+}
+function signed(v){ return (v < 0 ? '\u2212' : '') + Math.abs(v); }
+
+/* Dynamic strings are injected into SVG via innerHTML, so any angle bracket
+   (from "K'eq > 1" or from ">99.9%") must be escaped or it breaks parsing. */
+function esc(s){
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* ===========================================================================
+   ENERGY PROFILE DIAGRAM
+   =========================================================================== */
+const XS = 0.10, XE = 0.90;          // plateaux for the S and P ground states
+const XP_CAT = 0.42, XP_UN = 0.55;   // peak positions (offset only so labels don't collide)
+
+function energyAt(x, xp, peak){
+  if (x <= XS) return 0;
+  if (x >= XE) return dg0;
+  if (x <= xp){ const t = (x - XS) / (xp - XS); return peak * (1 - Math.cos(Math.PI * t)) / 2; }
+  const t = (x - xp) / (XE - xp);
+  return dg0 + (peak - dg0) * (1 + Math.cos(Math.PI * t)) / 2;
+}
+
+function niceStep(range){
+  for (const s of [5, 10, 20, 25, 50]) if (range / s <= 6) return s;
+  return 100;
+}
+
+function drawDiagram(){
+  const W = 440, H = 300, m = { l: 54, r: 16, t: 26, b: 40 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+  const hi = Math.max(dgu, dgc), lo = Math.min(0, dg0);
+  const pad = Math.max(12, (hi - lo) * 0.14);
+  const eMax = hi + pad, eMin = lo - pad;
+
+  const fx = x => m.l + x * pw;
+  const fy = e => (H - m.b) - ((e - eMin) / (eMax - eMin)) * ph;
+
+  const path = (xp, peak) => {
+    let d = '';
+    for (let i = 0; i <= 140; i++){
+      const x = i / 140;
+      d += (i === 0 ? 'M' : 'L') + fx(x).toFixed(1) + ' ' + fy(energyAt(x, xp, peak)).toFixed(1);
+    }
+    return d;
+  };
+
+  let s = '';
+  s += '<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">'
+     + '<path d="M0,0 L10,5 L0,10 z" fill="' + COL.muted + '"/></marker></defs>';
+
+  /* y-axis ticks and gridless labels */
+  const step = niceStep(eMax - eMin);
+  for (let e = Math.ceil(eMin / step) * step; e <= eMax; e += step){
+    s += '<line x1="' + (m.l - 5) + '" y1="' + fy(e).toFixed(1) + '" x2="' + m.l + '" y2="' + fy(e).toFixed(1)
+       + '" stroke="' + COL.muted + '" stroke-width="1.5"/>';
+    s += '<text x="' + (m.l - 9) + '" y="' + (fy(e) + 4.5).toFixed(1) + '" text-anchor="end" font-size="13" fill="'
+       + COL.muted + '">' + signed(e) + '</text>';
+  }
+
+  /* axes */
+  s += '<line x1="' + m.l + '" y1="' + m.t + '" x2="' + m.l + '" y2="' + (H - m.b) + '" stroke="' + COL.ink + '" stroke-width="1.5"/>';
+  s += '<line x1="' + m.l + '" y1="' + (H - m.b) + '" x2="' + (W - m.r) + '" y2="' + (H - m.b) + '" stroke="' + COL.ink + '" stroke-width="1.5"/>';
+  s += '<text transform="rotate(-90 15 ' + (m.t + ph / 2) + ')" x="15" y="' + (m.t + ph / 2)
+     + '" text-anchor="middle" font-size="13" font-weight="600" fill="' + COL.ink + '">Free energy, G (kJ/mol)</text>';
+  s += '<text x="' + (m.l + pw / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="13" font-weight="600" fill="'
+     + COL.ink + '">Reaction coordinate \u2192</text>';
+
+  /* reference levels (drawn beneath the curves) */
+  s += '<line x1="' + m.l + '" y1="' + fy(0).toFixed(1) + '" x2="' + (W - m.r) + '" y2="' + fy(0).toFixed(1)
+     + '" stroke="' + COL.s3 + '" stroke-width="1.5" stroke-dasharray="3 4"/>';
+  s += '<line x1="' + fx(0.60).toFixed(1) + '" y1="' + fy(dg0).toFixed(1) + '" x2="' + (W - m.r) + '" y2="' + fy(dg0).toFixed(1)
+     + '" stroke="' + COL.s3 + '" stroke-width="1.5" stroke-dasharray="3 4"/>';
+
+  /* measurement arrows (beneath the curves so the curves stay legible) */
+  const arrow = (x, e1, e2) => {
+    const heads = Math.abs(fy(e1) - fy(e2)) > 16 ? ' marker-start="url(#ah)" marker-end="url(#ah)"' : '';
+    return '<line x1="' + fx(x).toFixed(1) + '" y1="' + fy(e1).toFixed(1)
+      + '" x2="' + fx(x).toFixed(1) + '" y2="' + fy(e2).toFixed(1) + '" stroke="' + COL.muted
+      + '" stroke-width="1.5"' + heads + '/>';
+  };
+  s += arrow(XP_UN, 0, dgu);
+  s += arrow(XP_CAT, 0, dgc);
+  if (dg0 !== 0) s += arrow(0.95, 0, dg0);
+
+  /* Labels get a white halo so they stay readable wherever they land. The halo is
+     drawn as a separate stroked copy underneath rather than with paint-order,
+     because paint-order is not supported everywhere and an unsupported value
+     would paint white over the glyphs and make the label vanish. */
+  const lbl = (x, y, txt, anchor, weight) => {
+    const common = ' x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" text-anchor="' + anchor
+      + '" font-size="13" font-weight="' + (weight || 400) + '"';
+    return '<text' + common + ' fill="none" stroke="' + COL.surf
+         + '" stroke-width="3.5" stroke-linejoin="round">' + txt + '</text>'
+         + '<text' + common + ' fill="' + COL.ink + '">' + txt + '</text>';
+  };
+
+  s += lbl(fx(XP_UN) + 7, fy(dgu / 2) + 4, '\u0394G\u2021 ' + dgu, 'start');
+  s += lbl(fx(XP_CAT) - 7, fy(dgc / 2) + 4, '\u0394G\u2021 ' + dgc, 'end');
+  /* The area below the lower of the two ground states is always empty, so the
+     overall free-energy label goes there rather than beside the arrow. */
+  s += lbl(W - m.r, Math.max(fy(0), fy(dg0)) + 17, '\u0394G\u2032\u00b0 ' + signed(dg0), 'end');
+  s += lbl(m.l + 8, fy(0) - 9, 'S', 'start', 700);
+  s += lbl(fx(0.90) + 4, fy(dg0) - 9, 'P', 'start', 700);
+
+  /* curves on top: dashed rust = uncatalysed, solid blue = enzyme */
+  s += '<path d="' + path(XP_UN, dgu) + '" fill="none" stroke="' + COL.s2 + '" stroke-width="2.5" stroke-dasharray="7 5"/>';
+  s += '<path d="' + path(XP_CAT, dgc) + '" fill="none" stroke="' + COL.s1 + '" stroke-width="3"/>';
+
+  /* direct labels on the curves, anchored apart so they cannot collide */
+  s += lbl(fx(XP_UN) + 6, fy(dgu) - 9, 'Uncatalysed', 'start', 600);
+  s += lbl(fx(XP_CAT) - 6, fy(dgc) - 9, 'With enzyme', 'end', 600);
+
+  document.getElementById('diagram').innerHTML = s;
+}
+
+/* ===========================================================================
+   RATE ENHANCEMENT BAR (logarithmic)
+   =========================================================================== */
+function drawRateBar(){
+  const W = 320, H = 92, m = { l: 10, r: 10, t: 16, b: 30 };
+  const pw = W - m.l - m.r;
+  const LO = -5, HI = 22;
+  const fx = v => m.l + ((Math.min(HI, Math.max(LO, v)) - LO) / (HI - LO)) * pw;
+  const y = m.t + 12, h = 18;
+  const L = logRateEnhancement();
+  const zero = fx(0), end = fx(L);
+
+  let s = '';
+  s += '<rect x="' + m.l + '" y="' + y + '" width="' + pw + '" height="' + h + '" fill="' + COL.surf
+     + '" stroke="' + COL.border + '" stroke-width="1"/>';
+  const faster = L >= 0;
+  s += '<rect x="' + Math.min(zero, end).toFixed(1) + '" y="' + y + '" width="' + Math.abs(end - zero).toFixed(1)
+     + '" height="' + h + '" fill="' + (faster ? COL.s1 : COL.s2) + '"/>';
+  s += '<line x1="' + zero + '" y1="' + (y - 6) + '" x2="' + zero + '" y2="' + (y + h + 6)
+     + '" stroke="' + COL.ink + '" stroke-width="2"/>';
+  s += '<text x="' + zero + '" y="' + (y - 10) + '" text-anchor="middle" font-size="12" font-weight="600" fill="'
+     + COL.ink + '">no change</text>';
+
+  for (const t of [0, 4, 8, 12, 16, 20]){
+    s += '<line x1="' + fx(t) + '" y1="' + (y + h) + '" x2="' + fx(t) + '" y2="' + (y + h + 5)
+       + '" stroke="' + COL.muted + '" stroke-width="1.5"/>';
+    s += '<text x="' + fx(t) + '" y="' + (y + h + 19) + '" text-anchor="middle" font-size="12" fill="'
+       + COL.muted + '">10' + sup(t) + '</text>';
+  }
+  s += '<text x="' + W / 2 + '" y="' + (H - 2) + '" text-anchor="middle" font-size="12" fill="' + COL.muted
+     + '">rate with enzyme \u00f7 rate without enzyme</text>';
+  document.getElementById('rateBar').innerHTML = s;
+}
+
+/* ===========================================================================
+   DIRECTION OF THE FAVOURED REACTION
+   Thickness and a written verdict carry the meaning, not colour alone.
+   =========================================================================== */
+function verdict(){
+  if (Math.abs(dg0) < 0.25) return { dir: 0, text: 'Neither direction favoured',
+    eq: 'K\u2032eq = 1', eqSpoken: 'K prime e q equals 1', why: 'is zero' };
+  return dg0 < 0
+    ? { dir: 1, text: 'Forward favoured: product predominates',
+        eq: 'K\u2032eq > 1', eqSpoken: 'K prime e q is greater than 1', why: 'is negative' }
+    : { dir: -1, text: 'Reverse favoured: substrate predominates',
+        eq: 'K\u2032eq < 1', eqSpoken: 'K prime e q is less than 1', why: 'is positive' };
+}
+
+function drawDirection(){
+  const W = 320, H = 66;
+  const v = verdict();
+  const strong = { w: 4.5, col: COL.s1, m: 'ahStrong' };
+  const weak = { w: 1.5, col: COL.s3, m: 'ahWeak' };
+  const fwd = v.dir === 1 ? strong : v.dir === -1 ? weak : { w: 3, col: COL.s3, m: 'ahWeak' };
+  const rev = v.dir === -1 ? strong : v.dir === 1 ? weak : { w: 3, col: COL.s3, m: 'ahWeak' };
+
+  const mk = (id, col) => '<marker id="' + id + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5"'
+    + ' markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="' + col + '"/></marker>';
+
+  const x1 = 96, x2 = 224;   // arrows span between the S and P labels
+  let s = '<defs>' + mk('ahStrong', COL.s1) + mk('ahWeak', COL.s3) + '</defs>';
+
+  s += '<text x="76" y="28" text-anchor="end" font-size="19" font-weight="700" fill="' + COL.ink + '">S</text>';
+  s += '<text x="244" y="28" text-anchor="start" font-size="19" font-weight="700" fill="' + COL.ink + '">P</text>';
+
+  s += '<line x1="' + x1 + '" y1="16" x2="' + x2 + '" y2="16" stroke="' + fwd.col
+     + '" stroke-width="' + fwd.w + '" marker-end="url(#' + fwd.m + ')"/>';
+  s += '<line x1="' + x2 + '" y1="30" x2="' + x1 + '" y2="30" stroke="' + rev.col
+     + '" stroke-width="' + rev.w + '" marker-end="url(#' + rev.m + ')"/>';
+
+  s += '<text x="' + (W / 2) + '" y="50" text-anchor="middle" font-size="12.5" font-weight="700" fill="'
+     + COL.ink + '">' + esc(v.text) + '</text>';
+  s += '<text x="' + (W / 2) + '" y="63" text-anchor="middle" font-size="12.5" fill="' + COL.muted
+     + '">' + esc(v.eq) + ', \u0394G\u2032\u00b0 ' + v.why + '</text>';
+
+  document.getElementById('dirEq').innerHTML = s;
+  document.getElementById('dirEq').setAttribute('aria-label',
+    'Equation: S in equilibrium with P. ' + v.text + ', because delta G prime naught ' + v.why
+    + ', so ' + v.eqSpoken + '. The thicker arrow points ' + (v.dir === 1 ? 'from S to P.'
+    : v.dir === -1 ? 'from P to S.' : 'in neither direction; both arrows are drawn equal.'));
+}
+
+/* ===========================================================================
+   EQUILIBRIUM COMPOSITION BAR
+   =========================================================================== */
+function pct(x){
+  if (x > 99.9) return '>99.9';
+  if (x < 0.1) return '<0.1';
+  return x.toFixed(1);
+}
+function pctSpoken(x){
+  if (x > 99.9) return 'more than 99.9';
+  if (x < 0.1) return 'less than 0.1';
+  return x.toFixed(1);
+}
+function drawEqBar(){
+  const W = 320, H = 86, m = { l: 10, r: 10 };
+  const pw = W - m.l - m.r, y = 26, h = 24;
+  const p = fracProduct(), wP = pw * p, wS = pw - wP;
+
+  let s = '';
+  s += '<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+     + '<rect width="7" height="7" fill="' + COL.s2 + '"/>'
+     + '<line x1="0" y1="0" x2="0" y2="7" stroke="' + COL.surf + '" stroke-width="3"/></pattern></defs>';
+  s += '<text x="' + m.l + '" y="16" font-size="12" font-weight="600" fill="' + COL.ink
+     + '">Composition at equilibrium</text>';
+  s += '<rect x="' + m.l + '" y="' + y + '" width="' + wS.toFixed(1) + '" height="' + h + '" fill="url(#hatch)"/>';
+  s += '<rect x="' + (m.l + wS).toFixed(1) + '" y="' + y + '" width="' + wP.toFixed(1) + '" height="' + h
+     + '" fill="' + COL.s1 + '"/>';
+  s += '<rect x="' + m.l + '" y="' + y + '" width="' + pw + '" height="' + h + '" fill="none" stroke="'
+     + COL.ink + '" stroke-width="1.5"/>';
+  s += '<text x="' + m.l + '" y="' + (y + h + 18) + '" text-anchor="start" font-size="12.5" fill="' + COL.ink
+     + '">S (hatched) ' + esc(pct(100 * (1 - p))) + '%</text>';
+  s += '<text x="' + (W - m.r) + '" y="' + (y + h + 18) + '" text-anchor="end" font-size="12.5" fill="' + COL.ink
+     + '">P (solid) ' + esc(pct(100 * p)) + '%</text>';
+  document.getElementById('eqBar').innerHTML = s;
+}
+
+/* ===========================================================================
+   READOUTS AND TEXT ALTERNATIVES
+   =========================================================================== */
+function updateReadouts(){
+  const L = logRateEnhancement();
+  const enh = Math.pow(10, L);
+  const f = fmt(enh);
+  document.getElementById('rateVal').innerHTML =
+    '<span aria-hidden="true">' + f.glyph + '</span><span class="vh">' + f.spoken + '</span>';
+
+  const dd = dgu - dgc;
+  document.getElementById('rateSub').textContent = dd >= 0
+    ? 'The enzyme lowers the barrier by ' + dd.toFixed(0) + ' kJ/mol, which is '
+      + L.toFixed(1) + ' factors of ten.'
+    : 'The barrier is ' + Math.abs(dd).toFixed(0) + ' kJ/mol higher with the enzyme than without it, '
+      + 'so this setting describes a slower reaction, not a catalysed one.';
+
+  const K = keq(), kf = fmt(K), p = fracProduct();
+  document.getElementById('keqVal').innerHTML =
+    '<span aria-hidden="true">' + kf.glyph + '</span><span class="vh">' + kf.spoken + '</span>';
+  document.getElementById('keqSub').textContent =
+    'At equilibrium the mixture is ' + pct(100 * p) + '% product and '
+    + pct(100 * (1 - p)) + '% substrate. This depends only on \u0394G\u2032\u00b0.';
+
+  /* Descriptions of the three visuals live in aria-label rather than on the page,
+     so a screen-reader user still gets the current values. */
+  document.getElementById('diagram').setAttribute('aria-label',
+    'Reaction coordinate diagram. Both reactions start from substrate S at 0 kilojoules per mole '
+    + 'and end at product P at ' + signed(dg0).replace('\u2212', 'minus ') + ' kilojoules per mole. '
+    + 'The uncatalysed path, drawn dashed, climbs to a transition state ' + dgu
+    + ' kilojoules per mole above S. The enzyme-catalysed path, drawn solid, climbs to a transition state '
+    + dgc + ' kilojoules per mole above S. The start and end points are identical; only the peak heights differ.');
+
+  document.getElementById('rateBar').setAttribute('aria-label',
+    'Logarithmic scale from 10 to the power minus 5 up to 10 to the power 22, with a marked reference at 1 '
+    + 'meaning no change. The current rate enhancement of ' + f.spoken + ' sits '
+    + (L >= 0 ? L.toFixed(1) + ' factors of ten to the right of' : Math.abs(L).toFixed(1)
+      + ' factors of ten to the left of') + ' that reference'
+    + (L < -5 ? ', beyond the left-hand end of the scale, so the shaded bar is cut off there.' : '.'));
+
+  document.getElementById('eqBar').setAttribute('aria-label',
+    'Bar showing composition at equilibrium: substrate ' + pctSpoken(100 * (1 - p))
+    + ' per cent, shown hatched on the left, and product ' + pctSpoken(100 * p)
+    + ' per cent, shown solid on the right. This division does not change when either activation energy changes.');
+}
+
+/* ===========================================================================
+   CONTROLS
+   =========================================================================== */
+function refresh(){
+  dgu = +document.getElementById('dgu').value;
+  dgc = +document.getElementById('dgc').value;
+  dg0 = +document.getElementById('dg0').value;
+  document.getElementById('dguVal').textContent = dgu;
+  document.getElementById('dgcVal').textContent = dgc;
+  document.getElementById('dg0Val').textContent = signed(dg0);
+  drawDiagram(); drawRateBar(); drawDirection(); drawEqBar(); updateReadouts();
+}
+
+function wire(id, step){
+  const el = document.getElementById(id);
+  el.addEventListener('input', refresh);
+  document.getElementById(id + 'Up').addEventListener('click', () => {
+    el.value = Math.min(+el.max, +el.value + step); refresh();
+  });
+  document.getElementById(id + 'Down').addEventListener('click', () => {
+    el.value = Math.max(+el.min, +el.value - step); refresh();
+  });
+}
+wire('dgu', 2); wire('dgc', 2); wire('dg0', 0.5);
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  document.getElementById('dgu').value = DEFAULTS.dgu;
+  document.getElementById('dgc').value = DEFAULTS.dgc;
+  document.getElementById('dg0').value = DEFAULTS.dg0;
+  refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>
