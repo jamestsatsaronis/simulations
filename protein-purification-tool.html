@@ -2,6 +2,9 @@
 <!--
   Protein Purification — self-assessment tool
   Built on the /accessible-simulations house style ("Plain Service", light only).
+  Interleaved design: separation, characterisation and identification are all
+  available per-fraction, at any time (no hard stages). Fractions are opaque —
+  contents are hidden until a characterisation test is run on that fraction.
   Single self-contained file. GitHub-Pages ready, iframe-embeddable.
   No build step, no storage APIs, no auto-animation.
 -->
@@ -78,24 +81,10 @@
     border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));font-size:.95rem;}
 
   .text-alt{margin-top:14px;font-size:.9rem;color:var(--ink-muted);}
-  .text-alt table{border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums;width:100%;}
-  .text-alt th,.text-alt td{border:1px solid var(--border);padding:5px 9px;text-align:left;}
   .note{margin-top:10px;font-size:.82rem;color:var(--ink-muted);}
   .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 
   /* ---------- domain additions (tokens only, no new colours) ---------- */
-
-  /* progress steps — text-labelled, not colour-only */
-  .steps{display:flex;gap:12px;list-style:none;padding:0;margin:0 0 22px;flex-wrap:wrap;}
-  .step{display:flex;align-items:center;gap:10px;padding:8px 14px;border:2px solid var(--border);
-    border-radius:var(--radius);background:var(--surface);font-weight:600;font-size:.95rem;color:var(--ink-muted);}
-  .step .num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
-    border-radius:50%;border:2px solid var(--border);font-variant-numeric:tabular-nums;font-size:.9rem;flex:none;}
-  .step[aria-current="step"]{border-color:var(--accent);color:var(--ink);}
-  .step[aria-current="step"] .num{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);}
-  .step.done{color:var(--ink);}
-  .step.done .num{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);}
-  .step .state{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
 
   /* reference + help disclosure */
   details{border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;background:var(--surface);}
@@ -107,12 +96,6 @@
   .reftable th[scope=row]{text-align:left;}
   .helpbody p{margin:10px 0 0;font-size:.92rem;}
   .helpbody ul{margin:8px 0 0;padding-left:20px;font-size:.92rem;}
-
-  /* protein chip — identity carried by the LETTER, never colour alone */
-  .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
-  .prot{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;
-    padding:0 8px;border:2px solid var(--border);border-radius:var(--radius);background:var(--surface);
-    font-weight:700;font-variant-numeric:tabular-nums;font-size:.95rem;}
 
   /* purification tree */
   .tree{margin:0;padding:0;list-style:none;}
@@ -145,12 +128,33 @@
   .charbtn{appearance:none;font:inherit;font-weight:600;min-height:40px;padding:0 12px;font-size:.9rem;
     border-radius:var(--radius);border:2px solid var(--border);background:var(--surface);color:var(--ink);cursor:pointer;}
   .charbtn:hover{border-color:var(--accent);}
-  .charout{font-size:.9rem;margin:6px 0 0;padding:9px 11px;background:var(--surface-2);
-    border:1px solid var(--border);border-radius:var(--radius);}
   .assignrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;}
   .assignrow label{font-weight:600;font-size:.92rem;}
   select{font:inherit;min-height:44px;border:2px solid var(--border);border-radius:var(--radius);
     padding:0 10px;background:var(--surface);color:var(--ink);}
+
+  /* ---- interleaved-design additions: status banner, gels ---- */
+  .status{font-size:.92rem;color:var(--ink);margin:0 0 18px;padding:11px 14px;border:1px solid var(--border);
+    border-radius:var(--radius);background:var(--surface);}
+  .results{margin-top:10px;}
+  .resultblock{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin:8px 0;background:var(--surface);}
+  .resultblock h4{margin:0 0 4px;font-size:.88rem;}
+  .charnote{font-size:.86rem;color:var(--ink);margin:4px 0 0;}
+  .gel{position:relative;height:150px;border:1px solid var(--border);border-radius:var(--radius);
+    background:var(--surface-2);margin:8px 0 4px;overflow:hidden;}
+  .gel .cap{position:absolute;top:3px;left:6px;font-size:.66rem;color:var(--ink-muted);}
+  .gel .tick{position:absolute;left:4px;font-size:.66rem;color:var(--ink-muted);transform:translateY(-50%);}
+  .gel .lane{position:absolute;top:0;bottom:0;left:46px;right:70px;background:var(--surface);
+    border-left:1px solid var(--border);border-right:1px solid var(--border);}
+  .gel .band{position:absolute;left:5px;right:5px;height:6px;background:var(--ink);border-radius:2px;transform:translateY(-50%);}
+  .gel .blabel{position:absolute;right:6px;font-size:.7rem;color:var(--ink-muted);transform:translateY(-50%);
+    background:var(--surface-2);padding:0 3px;}
+  .gel .well{position:absolute;left:46px;right:70px;border-top:2px dashed var(--border);}
+  .gel .pole{position:absolute;right:6px;font-size:.66rem;color:var(--ink-muted);}
+  .subfooter{margin-top:6px;}
+  .gel .origin{position:absolute;left:0;right:0;top:50%;border-top:2px solid var(--ink-muted);}
+  .gel .wellslot{position:absolute;top:50%;width:16px;height:7px;background:var(--ink-muted);border-radius:1px;transform:translateY(-50%);}
+  .gel .originlab{position:absolute;left:4px;top:50%;font-size:.62rem;color:var(--ink-muted);transform:translateY(-50%);background:var(--surface-2);padding:0 2px;z-index:2;}
 </style>
 </head>
 <body>
@@ -158,11 +162,12 @@
   <div class="sim">
     <div class="sim-head">
       <h1>Protein purification tutorial activity</h1>
-      <p>You have a mixture of five <strong>unknown</strong> proteins, shown as tokens
-         P1–P5 in a random order (reshuffled each time you start over). Separate them
-         into pure fractions, then work out which is protein Sonic, Pikachu, Mario, Link or Kirby by running
-         characterisation techniques. You will not be told whether you are right until
-         you submit all five identifications at the end.</p>
+      <p>You have a mixture of five <strong>unknown</strong> proteins. Separate them into pure
+         fractions using whichever technique you choose, and run characterisation tests as you go
+         to see what is inside — a fraction's contents stay completely hidden until you test it.
+         When a fraction holds a single protein, work out which of Sonic, Pikachu, Mario, Link or
+         Kirby it is. You will not be told whether you are right until you submit all five
+         identifications at the end.</p>
     </div>
 
     <details id="refDetails">
@@ -192,51 +197,40 @@
           <li><strong>Ion exchange (DEAE)</strong> is an anion exchanger: it <em>binds</em>
               proteins that are <em>negatively</em> charged at the buffer pH (pI &lt; pH);
               positive or neutral proteins flow through. Charge is negative when pH &gt; pI.</li>
-          <li><strong>SDS-PAGE</strong> reports subunit mass (one band per polypeptide).
-              <strong>Native gel (pH 8.8)</strong> shows charge: negative proteins run to the
-              anode (+), positive to the cathode (−). <strong>UV-Vis</strong> gives A410/A280,
-              which flags coloured haem proteins.</li>
+          <li><strong>SDS-PAGE</strong> reports subunit mass — the number of bands tells you
+              whether a fraction is pure. <strong>Native gel (pH 8.8)</strong> shows charge:
+              negative proteins run to the anode (+), positive to the cathode (−).
+              <strong>UV-Vis</strong> gives A410/A280, which flags coloured haem proteins.</li>
         </ul>
       </div>
     </details>
 
-    <!-- progress indicator (numbered, text-labelled) -->
-    <ol class="steps" id="progress" aria-label="Activity progress"></ol>
+    <div class="status" id="status" aria-live="polite"></div>
+
+    <div class="panel">
+      <h2>Latest result</h2>
+      <div class="readout-box" aria-live="polite">
+        <div id="feedback" class="fb">Choose a fraction below, run a characterisation test to see
+          what is inside, and use a separation technique to split any mixture.</div>
+      </div>
+    </div>
 
     <div class="grid">
       <!-- LEFT: what the student does -->
       <div>
-        <div class="panel" id="sepPanel">
-          <h2>Stage 1 — Separate the mixture</h2>
-          <div id="sepBody"></div>
-        </div>
-
-        <div class="panel" id="idPanel" hidden>
-          <h2>Stage 2 — Identify each protein</h2>
-          <p class="note" style="margin-top:0">For each pure fraction, run whichever
-             characterisation techniques you need, then make your best call using the
-             worksheet data at the top of the page. You will not find out whether you
-             are right until you submit all five — so gather enough evidence to be sure.</p>
-          <div id="idBody"></div>
+        <div class="panel" id="fracPanel">
+          <h2>Your fractions</h2>
+          <div id="fractions"></div>
         </div>
       </div>
 
       <!-- RIGHT: results -->
       <div>
         <div class="panel">
-          <h2>Latest result</h2>
-          <div class="readout-box" aria-live="polite" id="feedbackLive">
-            <div id="feedback" class="fb">Choose a fraction and a technique on the left,
-              then select <strong>Apply technique</strong> to begin.</div>
-          </div>
-        </div>
-
-        <div class="panel">
           <h2>Your experiment</h2>
-          <div id="tree" role="img" aria-label="Purification tree showing each fraction (proteins shown as anonymous tokens P1 to P5) and the technique applied to it."></div>
-          <!-- text alternative: current fractions as a table, kept in sync -->
+          <div id="tree" role="img" aria-label="Purification tree showing each fraction and the technique used to produce it. Fraction contents are hidden until you run a characterisation test."></div>
+          <!-- text alternative, kept in sync -->
           <div class="text-alt">
-            <div id="stateSummary">The mixture has not been separated yet.</div>
             <div id="stateAlt"></div>
           </div>
         </div>
@@ -245,14 +239,14 @@
   </div>
 </div>
 
-<!-- visually-hidden live region for stage transitions -->
-<div class="vh" aria-live="polite" id="status"></div>
+<!-- visually-hidden live region for separation/submission announcements -->
+<div class="vh" aria-live="polite" id="statusVH"></div>
 
 <script>
 /* ===========================================================================
-   MODEL — ground-truth answer key (design brief §3). Z corrected to 65 kDa.
-   Identities are hidden from the student until they submit (proteins shown as
-   anonymous, randomly-ordered tokens P1–P5).
+   MODEL — ground-truth answer key. Identities are hidden from the student
+   until they submit; fraction contents themselves are hidden until a
+   characterisation test is run on that specific fraction.
    =========================================================================== */
 const PROT = {
   Sonic:  {mass:12000, sub:12000, pI:4.5, ratio:4},
@@ -263,8 +257,9 @@ const PROT = {
 };
 const ALL = ['Sonic','Pikachu','Mario','Link','Kirby'];
 const kDa = x => (x/1000).toString();
+const subMW = p => PROT[p].sub; /* tool's `sub` is already subunit mass, unlike the lab's subunit count */
 
-/* separation rules: binary outcomes only (design brief §4, fidelity A) */
+/* separation rules: binary outcomes only */
 function splitBins(contents, tech, pH){
   if(tech==='g50') return {property:'Sephadex G-50 (size, exclusion limit ~50 kDa)', bins:[
     {tag:'void (≥50 kDa)',   key:'g50v', contents:contents.filter(p=>PROT[p].mass>=50000)},
@@ -302,124 +297,137 @@ function hintFor(contents, triedTech, triedPH){
 }
 
 /* ===========================================================================
+   CHARACTERISATION RESULTS — visual gels (work for mixed fractions too)
+   =========================================================================== */
+const posSDS = mw => { const lo=Math.log10(10000), hi=Math.log10(80000);
+  const v=Math.log10(Math.min(80000,Math.max(10000,mw))); return Math.round((hi-v)/(hi-lo)*88+6); };
+const posNat = pI => { const off=Math.min(40,Math.abs(pI-8.8)*12); return pI<8.8 ? Math.round(50+off) : Math.round(50-off); };
+
+function gelSDS(contents){
+  const marks=[75,50,37,25,20,15,10];
+  const ticks=marks.map(k=>'<div class="tick" style="top:'+posSDS(k*1000)+'%">'+k+'</div>').join('');
+  const items=contents.map(p=>({p:posSDS(subMW(p)), lab:'~'+kDa(subMW(p))+' kDa'})).sort((a,b)=>a.p-b.p);
+  const minGap=11;
+  for(let i=1;i<items.length;i++) if(items[i].p-items[i-1].p<minGap) items[i].p=items[i-1].p+minGap;
+  if(items.length){ const over=items[items.length-1].p-94; if(over>0) items.forEach(it=>it.p-=over);
+                    const under=6-items[0].p; if(under>0) items.forEach(it=>it.p+=under); }
+  const bands=items.map(it=>'<div class="band" style="top:'+it.p+'%"></div><div class="blabel" style="top:'+it.p+'%">'+it.lab+'</div>').join('');
+  const n=contents.length;
+  const alt='SDS-PAGE: '+n+' band'+(n>1?'s':'')+' at approximately '+contents.map(p=>kDa(subMW(p))+' kilodaltons').join(', ')
+    +(n>1?'. More than one band means the fraction is still a mixture.':'. A single band.');
+  const note='<p class="charnote">'+n+' band'+(n>1?'s':'')+' (~'+contents.map(p=>kDa(subMW(p))+' kDa').join(', ')+'). '
+    +(n>1?'More than one band — this fraction is still a mixture.':'A single band — this fraction is one protein.')+'</p>';
+  return '<div class="resultblock"><h4>SDS-PAGE</h4><div class="gel" role="img" aria-label="'+alt+'">'
+    + '<div class="cap">kDa</div>'+ticks+'<div class="lane">'+bands+'</div></div>'+note+'</div>';
+}
+function gelNative(contents){
+  const items=contents.map(p=>({anode:PROT[p].pI<8.8, p:posNat(PROT[p].pI), dir:PROT[p].pI<8.8?'anode (+)':'cathode (−)'}));
+  let floor=57; items.filter(i=>i.anode).sort((a,b)=>a.p-b.p).forEach(it=>{ if(it.p<floor) it.p=floor; floor=it.p+11; if(it.p>94) it.p=94; });
+  let ceil=43;  items.filter(i=>!i.anode).sort((a,b)=>b.p-a.p).forEach(it=>{ if(it.p>ceil) it.p=ceil; ceil=it.p-11; if(it.p<6) it.p=6; });
+  const bands=items.map(it=>'<div class="band" style="top:'+it.p+'%"></div><div class="blabel" style="top:'+it.p+'%">'+it.dir+'</div>').join('');
+  const wells='<div class="origin"></div>'
+    + '<div class="wellslot" style="left:10%"></div><div class="wellslot" style="left:calc(50% - 8px)"></div><div class="wellslot" style="right:10%"></div>'
+    + '<div class="originlab">origin (wells)</div>';
+  const alt='Native gel at pH 8.8. Samples are loaded at the origin line down the middle of the gel. '
+    + contents.map(p=>'one band migrating '+(PROT[p].pI<8.8?'down towards the anode':'up towards the cathode')).join('; ')+'.';
+  const note='<p class="charnote">The origin (wells) runs down the middle. '
+    + contents.map(p=>'one band to the '+(PROT[p].pI<8.8?'anode (+ end)':'cathode (− end)')).join('; ')+'.</p>';
+  return '<div class="resultblock"><h4>Native gel (pH 8.8)</h4><div class="gel" role="img" aria-label="'+alt+'">'
+    + '<div class="pole" style="top:4px">cathode (−)</div><div class="pole" style="bottom:4px">anode (+)</div>'
+    + '<div class="lane">'+wells+bands+'</div></div>'+note+'</div>';
+}
+function uvText(p){
+  const d = PROT[p];
+  if(d.ratio>=3) return 'a strong Soret band (A410/A280 ≈ '+d.ratio+') — a coloured haem protein';
+  if(d.ratio>0)  return 'a weak Soret band (A410/A280 ≈ '+d.ratio+') — some haem present';
+  return 'no absorbance at 410 nm (A410/A280 = 0) — no haem or coloured cofactor';
+}
+function blockUV(contents){
+  const uniq=[...new Set(contents.map(uvText))];
+  const text = uniq.length===1 ? uniq[0] : uniq.join('; ')+' (signal from more than one species)';
+  return '<div class="resultblock"><h4>UV-Vis</h4><p class="charnote" style="margin:0">'+text+'</p></div>';
+}
+function resultsHTML(n){
+  let h='';
+  if(n.ran.has('sds'))    h+=gelSDS(n.contents);
+  if(n.ran.has('native')) h+=gelNative(n.contents);
+  if(n.ran.has('uvvis'))  h+=blockUV(n.contents);
+  return h ? '<div class="results">'+h+'</div>' : '';
+}
+
+/* ===========================================================================
    STATE
    =========================================================================== */
 let state;
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function reset(){
-  const order = shuffle([...ALL]);
-  const tokenMap = {}; order.forEach((letter,i)=> tokenMap[letter]='P'+(i+1));
-  state = {stage:1, nodes:[], fcount:0, selFraction:null, tech:'g100', pH:7.5,
-           sepSteps:0, propsUsed:new Set(), tokenMap, submitted:false};
-  const root = newNode(ALL, []);
-  state.selFraction = root.id;
-  document.getElementById('idPanel').hidden = true;
-  renderAll();
-  setFeedback('Choose a fraction and a technique on the left, then select '
-    + '<strong>Apply technique</strong> to begin. Your goal is five pure fractions '
-    + '(one protein each). The proteins are hidden as P1–P5 for now.', null);
-  document.getElementById('stateSummary').textContent = 'The mixture has not been separated yet.';
+  state = {nodes:[], fcount:0, sepSteps:0, propsUsed:new Set(), submitted:false};
+  newNode(ALL, []);
+  render();
+  setFeedback('Choose a fraction below, run a characterisation test to see what is inside, and '
+    + 'use a separation technique to split any mixture. Start with the whole mixture in fraction '
+    + 'F1. Your goal is five pure fractions (one protein each).', null);
 }
 function newNode(contents, history){
   state.fcount++;
   const node = {id:state.fcount, name:'F'+state.fcount, contents:[...contents],
                 processed:false, property:'', split:null, children:[], history:[...history],
-                ran:new Set(), shown:{}, assigned:'', solved:false, idFb:''};
+                ran:new Set(), tech:'g100', pH:7.5, assigned:'', solved:null, idFb:''};
   state.nodes.push(node);
   return node;
 }
 const byId = id => state.nodes.find(n=>n.id===id);
-const leaves     = () => state.nodes.filter(n=>!n.processed);
-const actionable = () => leaves().filter(n=>n.contents.length>1);
-const pureLeaves = () => leaves().filter(n=>n.contents.length===1);
-
-/* token helpers — the student only ever sees these, never the true letter */
-const tok     = l => state.tokenMap[l];
-const tokSort = arr => [...arr].sort((a,b)=> tok(a).localeCompare(tok(b),undefined,{numeric:true}));
-const tokList = arr => tokSort(arr).map(tok).join(', ');
+const leaves = () => state.nodes.filter(n=>!n.processed);
 
 /* ===========================================================================
-   STAGE 1 — apply a technique
+   ACTIONS — separate, characterise and identify all happen per-fraction
    =========================================================================== */
-function doApply(){
-  const n = byId(state.selFraction);
-  if(!n || n.processed){ setFeedback('Choose a fraction to work on first.', 'warn'); return; }
+function doApply(nodeId){
+  const n = byId(nodeId);
+  if(!n || n.processed) return;
   if(n.contents.length<2){ setFeedback('Fraction '+n.name+' is already pure — nothing to separate.', 'warn'); return; }
 
-  const r = splitBins(n.contents, state.tech, state.pH);
+  const r = splitBins(n.contents, n.tech, n.pH);
   const nonEmpty = r.bins.filter(b=>b.contents.length>0);
 
   if(nonEmpty.length<2){
-    const hint = hintFor(n.contents, state.tech, state.tech==='deae'?state.pH:null);
+    const hint = hintFor(n.contents, n.tech, n.tech==='deae'?n.pH:null);
     setFeedback('<span class="mark">→ No separation.</span> On '+r.property+', every protein in '
-      + n.name+' ('+tokList(n.contents)+') ends up in the same fraction, so they stay mixed. '
+      + n.name+' ends up in the same fraction, so they stay mixed. '
       + 'Use a property where they differ — e.g. '+hint, 'warn');
     return;
   }
 
   state.sepSteps++;
-  state.propsUsed.add(state.tech==='deae' ? 'charge' : 'size');
+  state.propsUsed.add(n.tech==='deae' ? 'charge' : 'size');
   n.processed = true; n.property = r.property; n.split = nonEmpty;
+  const names = [];
   nonEmpty.forEach(b=>{
-    const child = newNode(b.contents, [...n.history, binPhrase(b.key, state.pH)]);
+    const child = newNode(b.contents, [...n.history, binPhrase(b.key, n.pH)]);
     n.children.push(child.id);
+    names.push(child.name+' ('+b.tag+')');
   });
-  const nextMixed = actionable()[0];
-  state.selFraction = nextMixed ? nextMixed.id : null;
 
   setFeedback('<span class="mark">✓ Step '+state.sepSteps+'.</span> '+r.property+' separated '
-    + n.name+' by '+(state.tech==='deae'?'charge':'size')+'. '
-    + nonEmpty.map(b=>b.tag+' → '+tokList(b.contents)).join('; ')+'.', 'good');
-
-  renderAll();
-  maybeCompleteSeparation();
+    + n.name+' by '+(n.tech==='deae'?'charge':'size')+' into '+names.join(' and ')
+    + '. Run a characterisation test on each new fraction to see what is inside.', 'good');
+  document.getElementById('statusVH').textContent = n.name+' separated into '+names.join(' and ')+'.';
+  render();
 }
-function maybeCompleteSeparation(){
-  if(actionable().length===0 && pureLeaves().length===ALL.length){
-    state.stage = 2;
-    document.getElementById('idPanel').hidden = false;
-    document.getElementById('status').textContent =
-      'Separation complete. Five pure fractions. Move to Stage 2 to identify them.';
-    setFeedback('<span class="mark">✓ Separation complete.</span> Five pure fractions. '
-      + 'Now identify each one in Stage 2 — run characterisation, make your best calls, '
-      + 'then submit. You will only find out whether you are right after you submit.', 'good');
-    renderProgress();
-    renderSep();
-    renderIdentify();
-  }
-}
-
-/* ===========================================================================
-   STAGE 2 — characterise (data only) and, at the end, submit for feedback
-   =========================================================================== */
-function charReadout(p, kind){
-  const d = PROT[p];
-  if(kind==='sds') return 'SDS-PAGE: a single band at ~'+kDa(d.sub)+' kDa.';
-  if(kind==='native'){
-    if(d.pI < 8.8){
-      let speed = d.pI<=3.5 ? ' It moves quickly (strongly acidic).'
-               : d.pI>=7   ? ' It moves slowly (only weakly negative at pH 8.8).' : '';
-      return 'Native gel (pH 8.8): migrates towards the anode (+), so it is negatively charged.'+speed;
-    }
-    return 'Native gel (pH 8.8): migrates towards the cathode (−), so it is positively charged at pH 8.8.';
-  }
-  if(d.ratio>=3) return 'UV-Vis: A410/A280 ≈ '+d.ratio+' — a strong Soret band; a coloured haem protein.';
-  if(d.ratio>0)  return 'UV-Vis: A410/A280 ≈ '+d.ratio+' — a weak Soret band; some haem present.';
-  return 'UV-Vis: A410/A280 = 0 — no absorbance at 410 nm; no haem or coloured cofactor.';
-}
-function runChar(nodeId, kind){
-  if(state.submitted) return;
-  const n = byId(nodeId);
-  n.ran.add(kind);
-  n.shown[kind] = charReadout(n.contents[0], kind);
-  renderIdentify();
-}
+function runChar(nodeId, kind){ if(state.submitted) return; byId(nodeId).ran.add(kind); render(); }
+function setTech(nodeId, tech){ byId(nodeId).tech = tech; renderFractions(); }
+function setPH(nodeId, pH){ byId(nodeId).pH = parseFloat(pH); renderFractions(); }
+function setAssign(nodeId, val){ if(!state.submitted){ byId(nodeId).assigned = val; renderFractions(); } }
 
 /* build the end-of-activity verdict for one fraction (only shown after submit) */
 function evalOne(n){
+  if(n.contents.length>1){
+    return {solved:false, fb:'<span class="mark">✗ Not pure.</span> '+n.name+' still contains more '
+      + 'than one protein — its SDS-PAGE would show '+n.contents.length+' bands. Separate it fully '
+      + 'before identifying.'};
+  }
   const truth = n.contents[0], a = n.assigned;
   if(a===truth){
-    let msg = '<span class="mark">✓ Correct — '+tok(truth)+' is protein '+truth+'.</span> ';
+    let msg = '<span class="mark">✓ Correct — '+n.name+' is '+truth+'.</span> ';
     if(n.ran.has('uvvis') && (truth==='Sonic' || truth==='Mario')){
       msg += truth==='Sonic'
         ? 'Its A410/A280 ≈ 4 is decisive — Sonic is the only strongly coloured protein in the set.'
@@ -438,24 +446,26 @@ function evalOne(n){
     }
     return {solved:true, fb:msg};
   }
-  let msg = '<span class="mark">✗ Not quite — '+tok(truth)+' is actually protein '+truth+', not '+a+'.</span> '
+  let msg = '<span class="mark">✗ Not quite — '+n.name+' is actually '+truth+', not '+a+'.</span> '
     + 'On SDS-PAGE it gives one band at ~'+kDa(PROT[truth].sub)+' kDa (that matches '+truth
     + '; '+a+' would be ~'+kDa(PROT[a].sub)+' kDa).';
   if(PROT[truth].ratio>0) msg += ' Its A410/A280 of '+PROT[truth].ratio+' also flags it as a haem protein.';
   return {solved:false, fb:msg};
 }
 function doSubmit(){
-  const pl = pureLeaves();
-  if(!pl.every(n=>n.assigned)) return;
-  pl.forEach(n=>{ const r = evalOne(n); n.solved = r.solved; n.idFb = r.fb; });
+  const ls = leaves();
+  if(!ls.every(n=>n.assigned)) return;
+  ls.forEach(n=>{ const r = evalOne(n); n.solved = r.solved; n.idFb = r.fb; });
   state.submitted = true;
 
-  const counts = {}; pl.forEach(n=> counts[n.assigned] = (counts[n.assigned]||0)+1);
+  const pureLs = ls.filter(n=>n.contents.length===1);
+  const counts = {}; pureLs.forEach(n=> counts[n.assigned] = (counts[n.assigned]||0)+1);
   const dups = Object.keys(counts).filter(k=>counts[k]>1);
-  const correct = pl.filter(n=>n.solved).length;
+  const correct = ls.filter(n=>n.solved).length;
+  const allCorrect = ls.length===ALL.length && ls.every(n=>n.solved);
 
   let summary;
-  if(correct===ALL.length){
+  if(allCorrect){
     const props = [...state.propsUsed];
     const propText = props.length>1 ? 'size exclusion and ion exchange — two orthogonal properties'
                                     : (props[0]==='size' ? 'size exclusion' : 'ion exchange');
@@ -467,11 +477,9 @@ function doSubmit(){
       + 'The reasoning for each fraction is shown below'
       + (dups.length ? '. Note: you assigned '+dups.join(', ')+' to more than one fraction — each protein appears once.' : '.');
   }
-  setFeedback(summary, correct===ALL.length?'good':'warn');
-  document.getElementById('status').textContent = 'Identifications submitted. Feedback is shown for each fraction.';
-  renderProgress(correct===ALL.length);
-  renderTree();
-  renderIdentify();
+  setFeedback(summary, allCorrect?'good':'warn');
+  document.getElementById('statusVH').textContent = 'Identifications submitted. Feedback is shown for each fraction.';
+  render();
 }
 
 /* ===========================================================================
@@ -482,71 +490,84 @@ function setFeedback(html, type){
   fb.className = 'fb' + (type? ' '+type : '');
   fb.innerHTML = html;
 }
-function renderProgress(allDone){
-  const done1 = state.stage>1, cur1 = state.stage===1;
-  const cur2  = state.stage===2 && !allDone, done2 = !!allDone;
-  document.getElementById('progress').innerHTML =
-    stepHTML(1,'Separate the mixture', done1, cur1) +
-    stepHTML(2,'Identify each protein', done2, cur2);
+function renderStatus(){
+  const ls = leaves(), pure = ls.filter(n=>n.contents.length===1).length;
+  const el = document.getElementById('status');
+  if(state.submitted){ el.textContent = 'Submitted. Feedback is shown for each fraction below.'; return; }
+  el.innerHTML = '<strong>Goal:</strong> get each of the five proteins into its own pure fraction '
+    + '(a single SDS-PAGE band), identify it, then submit. &nbsp;Fractions: '+ls.length
+    + ' &middot; pure so far: '+pure+' of '+ALL.length;
 }
-function stepHTML(n,label,done,current){
-  const cls = 'step'+(done?' done':'');
-  const cur = current ? ' aria-current="step"' : '';
-  const stateTxt = done ? '<span class="state">done</span>'
-                 : current ? '<span class="state">now</span>' : '';
-  return '<li class="'+cls+'"'+cur+'><span class="num" aria-hidden="true">'+(done?'✓':n)+'</span>'
-       + '<span>'+label+'</span> '+stateTxt+'</li>';
-}
-function renderAll(){ renderProgress(); renderSep(); renderTree(); renderStateAlt(); }
+function render(){ renderStatus(); renderFractions(); renderTree(); renderStateAlt(); }
 
-function renderSep(){
-  const body = document.getElementById('sepBody');
-  if(state.stage>1){
-    body.innerHTML = '<div class="fb good"><span class="mark">✓ Separation complete.</span> '
-      + 'All five proteins are isolated. Identify them in Stage 2 below (on narrow screens, scroll down).</div>'
-      + '<div class="btnrow" style="margin-top:14px"><button type="button" class="btn btn-ghost" id="resetBtn">Start over</button></div>';
-    return;
-  }
-  const mixed = actionable();
-  if(state.selFraction===null || !mixed.some(n=>n.id===state.selFraction)){
-    state.selFraction = mixed.length ? mixed[0].id : null;
-  }
-  const fracRadios = mixed.map(n=>{
-    const checked = n.id===state.selFraction;
-    return '<label class="radio'+(checked?' checked':'')+'">'
-      + '<input type="radio" name="frac" value="'+n.id+'"'+(checked?' checked':'')+'>'
-      + '<span class="rlabel">'+n.name+' <span class="rsub">contains: '+tokList(n.contents)+'</span></span></label>';
+function renderFractions(){
+  const ls = leaves();
+  const cards = ls.map(n=>{
+    const dis = state.submitted ? ' disabled' : '';
+    const lineage = n.history.length
+      ? '<ul class="hist">'+n.history.map(h=>'<li>'+h+'</li>').join('')+'</ul>'
+      : '<ul class="hist"><li>Starting mixture — five unknown proteins</li></ul>';
+    const opts = ['<option value="">— choose —</option>']
+      .concat(ALL.map(p=>'<option value="'+p+'"'+(n.assigned===p?' selected':'')+'>'+p+'</option>')).join('');
+
+    const techR = [
+      ['g100','Size exclusion — Sephadex G-100','exclusion limit ~100 kDa'],
+      ['g50', 'Size exclusion — Sephadex G-50','exclusion limit ~50 kDa'],
+      ['deae','Ion exchange — DEAE','anion exchanger; binds negative proteins']
+    ].map(([v,l,s])=>{
+      const c = n.tech===v;
+      return '<label class="radio'+(c?' checked':'')+'">'
+        + '<input type="radio" name="tech'+n.id+'" value="'+v+'"'+(c?' checked':'')+dis+'>'
+        + '<span class="rlabel">'+l+' <span class="rsub">'+s+'</span></span></label>';
+    }).join('');
+    const phBlock = n.tech==='deae' ? (
+      '<div class="control"><fieldset><legend>Buffer pH for DEAE</legend><div class="radios">'
+      + [['7.5','pH 7.5'],['8.8','pH 8.8']].map(([v,l])=>{
+          const c = String(n.pH)===v;
+          return '<label class="radio'+(c?' checked':'')+'">'
+            + '<input type="radio" name="ph'+n.id+'" value="'+v+'"'+(c?' checked':'')+dis+'>'
+            + '<span class="rlabel">'+l+'</span></label>';
+        }).join('') + '</div></fieldset></div>'
+    ) : '';
+    const sep = state.submitted ? '' :
+      '<div class="control subfooter"><fieldset><legend style="font-size:.9rem">Purify further</legend>'
+      + '<div class="radios" style="margin-bottom:10px">'+techR+'</div>'
+      + phBlock
+      + '<button type="button" class="btn btn-primary" data-apply="'+n.id+'">Apply to '+n.name+'</button></fieldset></div>';
+
+    const verdict = (state.submitted && n.idFb) ? '<div class="fb '+(n.solved?'good':'warn')+'" style="margin-top:12px">'+n.idFb+'</div>' : '';
+    const head = state.submitted
+      ? n.name+' — '+(n.contents.length>1 ? 'mixture: '+n.contents.join(' + ') : n.contents[0])
+      : n.name;
+
+    return '<div class="idcard'+(state.submitted&&n.solved?' solved':'')+'">'
+      + '<h3>Fraction '+head+'</h3>'
+      + '<p class="note" style="margin:0">How you isolated it:</p>'+lineage
+      + '<div class="charbtns">'
+      +   '<button type="button" class="charbtn" data-kind="sds" data-node="'+n.id+'"'+dis+'>Run SDS-PAGE</button>'
+      +   '<button type="button" class="charbtn" data-kind="native" data-node="'+n.id+'"'+dis+'>Run native gel</button>'
+      +   '<button type="button" class="charbtn" data-kind="uvvis" data-node="'+n.id+'"'+dis+'>Run UV-Vis</button>'
+      + '</div>'+resultsHTML(n)
+      + sep
+      + '<div class="assignrow">'
+      +   '<label for="assign'+n.id+'">Your identification:</label>'
+      +   '<select id="assign'+n.id+'" data-assign="'+n.id+'"'+dis+'>'+opts+'</select>'
+      + '</div>'+verdict+'</div>';
   }).join('');
-  const techs = [
-    ['g100','Size exclusion — Sephadex G-100','exclusion limit ~100 kDa'],
-    ['g50', 'Size exclusion — Sephadex G-50','exclusion limit ~50 kDa'],
-    ['deae','Ion exchange — DEAE','anion exchanger; binds negative proteins']
-  ];
-  const techRadios = techs.map(([v,l,s])=>{
-    const checked = state.tech===v;
-    return '<label class="radio'+(checked?' checked':'')+'">'
-      + '<input type="radio" name="tech" value="'+v+'"'+(checked?' checked':'')+'>'
-      + '<span class="rlabel">'+l+' <span class="rsub">'+s+'</span></span></label>';
-  }).join('');
-  const phBlock = state.tech==='deae' ? (
-    '<div class="control"><fieldset><legend>Buffer pH for DEAE</legend><div class="radios">'
-    + [['7.5','pH 7.5'],['8.8','pH 8.8']].map(([v,l])=>{
-        const checked = String(state.pH)===v;
-        return '<label class="radio'+(checked?' checked':'')+'">'
-          + '<input type="radio" name="ph" value="'+v+'"'+(checked?' checked':'')+'>'
-          + '<span class="rlabel">'+l+'</span></label>';
-      }).join('') + '</div></fieldset></div>'
-  ) : '';
-  body.innerHTML =
-      '<div class="control"><fieldset><legend>1. Choose a fraction to separate</legend>'
-    +   '<div class="radios">'+(fracRadios || '<p class="note">No mixed fractions left.</p>')+'</div></fieldset></div>'
-    + '<div class="control"><fieldset><legend>2. Choose a technique</legend>'
-    +   '<div class="radios">'+techRadios+'</div></fieldset></div>'
-    + phBlock
-    + '<div class="btnrow">'
-    +   '<button type="button" class="btn btn-primary" id="applyBtn">Apply technique</button>'
-    +   '<button type="button" class="btn btn-ghost" id="resetBtn">Start over</button>'
-    + '</div>';
+
+  let footer;
+  if(state.submitted){
+    footer = '<div class="btnrow"><button type="button" class="btn btn-ghost" id="resetBtn">Start over</button></div>';
+  } else {
+    const allAssigned = ls.length>0 && ls.every(n=>n.assigned);
+    footer = '<p class="note" style="margin-top:0">Make a call for every fraction, then submit. '
+      + 'Any fraction that is still a mixture will be flagged. Feedback and the true identities '
+      + 'are revealed only after you submit.</p>'
+      + '<div class="btnrow"><button type="button" class="btn btn-primary" id="submitBtn"'
+      + (allAssigned?'':' disabled')+'>Submit my identifications</button>'
+      + '<button type="button" class="btn btn-ghost" id="resetBtn">Start over</button></div>';
+  }
+  document.getElementById('fractions').innerHTML = cards + footer;
 }
 
 function renderTree(){
@@ -555,93 +576,40 @@ function renderTree(){
 function nodeHTML(node){
   const leaf = !node.processed;
   const pure = leaf && node.contents.length===1;
-  const reveal = (state.submitted && pure) ? ' <span class="rsub" style="font-weight:400">(protein '+node.contents[0]+')</span>' : '';
-  const badge = !leaf ? '<span class="badge">separated</span>'
-              : pure  ? '<span class="badge pure">✓ Pure</span>'
-              :         '<span class="badge mixed">Mixed</span>';
-  const chips = '<div class="chips">'+tokSort(node.contents).map(p=>'<span class="prot">'+tok(p)+'</span>').join('')+'</div>';
+  const reveal = (state.submitted && leaf)
+    ? ' <span class="rsub" style="font-weight:400">('+(node.contents.length>1
+        ? 'mixture: '+node.contents.join(' + ')
+        : 'protein '+node.contents[0])+')</span>'
+    : '';
+  const badge = !leaf ? '<span class="badge">separated</span>' : '<span class="badge mixed">fraction</span>';
   const desc = node.processed
-    ? '<p class="step-desc">Applied '+node.property+'. → '
-      + node.split.map(b=>b.tag+': '+tokList(b.contents)).join('  ·  ')+'</p>' : '';
+    ? '<p class="step-desc">'+node.property+' → '+node.split.map(b=>b.tag).join('  ·  ')+'</p>' : '';
   const kids = node.children.length ? '<ul>'+node.children.map(id=>nodeHTML(byId(id))).join('')+'</ul>' : '';
-  return '<li><div class="node'+(node.processed?' processed':'')+(pure?' pure':'')+'">'
-    + '<span class="fname">'+node.name+'</span>'+badge+reveal+chips+desc+'</div>'+kids+'</li>';
+  return '<li><div class="node'+(node.processed?' processed':'')+(pure&&state.submitted?' pure':'')+'">'
+    + '<span class="fname">'+node.name+'</span>'+badge+reveal+desc+'</div>'+kids+'</li>';
 }
 function renderStateAlt(){
-  const ls = leaves(), done = state.stage>1;
-  document.getElementById('stateSummary').textContent = done
-    ? 'Separation complete: five pure fractions.'
-    : 'Current fractions: '+ls.length+' ('+pureLeaves().length+' pure, '+actionable().length+' still mixed).';
-  const rows = ls.map(n=>'<tr><td>'+n.name+'</td><td>'+tokList(n.contents)
-      +'</td><td>'+(n.contents.length===1?'Pure':'Mixed')+'</td></tr>').join('');
+  const ls = leaves();
   document.getElementById('stateAlt').innerHTML =
-    '<table><caption class="vh">Current fractions and their contents (proteins shown as tokens)</caption>'
-    + '<thead><tr><th scope="col">Fraction</th><th scope="col">Contains</th><th scope="col">Status</th></tr></thead>'
-    + '<tbody>'+rows+'</tbody></table>';
-}
-function renderIdentify(){
-  const body = document.getElementById('idBody');
-  const pl = pureLeaves();
-  const cards = pl.map(n=>{
-    const hist = '<ul class="hist">'+n.history.map(h=>'<li>'+h+'</li>').join('')+'</ul>';
-    const outs = ['sds','native','uvvis'].filter(k=>n.shown[k])
-                  .map(k=>'<div class="charout">'+n.shown[k]+'</div>').join('');
-    const dis = state.submitted ? ' disabled' : '';
-    const opts = ['<option value="">— choose —</option>']
-      .concat(ALL.map(p=>'<option value="'+p+'"'+(n.assigned===p?' selected':'')+'>'+p+'</option>')).join('');
-    const fb = (state.submitted && n.idFb) ? '<div class="fb '+(n.solved?'good':'warn')+'" style="margin-top:12px">'+n.idFb+'</div>' : '';
-    const head = state.submitted
-      ? 'Fraction '+n.name+' ('+tok(n.contents[0])+') — you said '+(n.assigned||'—')
-      : 'Fraction '+n.name+' — contains '+tok(n.contents[0]);
-    return '<div class="idcard'+(state.submitted&&n.solved?' solved':'')+'">'
-      + '<h3>'+head+'</h3>'
-      + '<p class="note" style="margin:0">How you isolated it:</p>'+hist
-      + '<div class="charbtns">'
-      +   '<button type="button" class="charbtn" data-kind="sds" data-node="'+n.id+'"'+dis+'>Run SDS-PAGE</button>'
-      +   '<button type="button" class="charbtn" data-kind="native" data-node="'+n.id+'"'+dis+'>Run native gel</button>'
-      +   '<button type="button" class="charbtn" data-kind="uvvis" data-node="'+n.id+'"'+dis+'>Run UV-Vis</button>'
-      + '</div>'+outs
-      + '<div class="assignrow">'
-      +   '<label for="assign'+n.id+'">Your identification:</label>'
-      +   '<select id="assign'+n.id+'" data-node="'+n.id+'"'+dis+'>'+opts+'</select>'
-      + '</div>'+fb+'</div>';
-  }).join('');
-
-  let footer;
-  if(state.submitted){
-    footer = '<div class="btnrow"><button type="button" class="btn btn-ghost" id="idResetBtn">Start over</button></div>';
-  } else {
-    const allAssigned = pl.length===ALL.length && pl.every(n=>n.assigned);
-    footer = '<p class="note" style="margin-top:0">Make a call for all five fractions, then submit. '
-      + 'Feedback and the true identities are revealed only after you submit.</p>'
-      + '<div class="btnrow"><button type="button" class="btn btn-primary" id="submitBtn"'
-      + (allAssigned?'':' disabled')+'>Submit my identifications</button></div>';
-  }
-  body.innerHTML = cards + footer;
+    'Current fractions: '+ls.map(n=>n.name).join(', ')+'. Run a characterisation test on a '
+    + 'fraction to see what it contains; fraction contents are not shown until you do.';
 }
 
 /* ===========================================================================
-   EVENTS  (delegated on stable panels — survives inner re-render)
+   EVENTS  (delegated on the stable panel — survives inner re-render)
    =========================================================================== */
-document.getElementById('sepPanel').addEventListener('change', e=>{
-  if(e.target.name==='tech'){ state.tech=e.target.value; renderSep(); }
-  else if(e.target.name==='ph'){ state.pH=parseFloat(e.target.value); renderSep(); }
-  else if(e.target.name==='frac'){ state.selFraction=parseInt(e.target.value,10); renderSep(); }
+document.getElementById('fracPanel').addEventListener('click', e=>{
+  const t = e.target;
+  if(t.dataset.kind)          runChar(parseInt(t.dataset.node,10), t.dataset.kind);
+  else if(t.dataset.apply)    doApply(parseInt(t.dataset.apply,10));
+  else if(t.id==='submitBtn') doSubmit();
+  else if(t.id==='resetBtn')  reset();
 });
-document.getElementById('sepPanel').addEventListener('click', e=>{
-  if(e.target.id==='applyBtn') doApply();
-  else if(e.target.id==='resetBtn') reset();
-});
-document.getElementById('idPanel').addEventListener('click', e=>{
-  if(e.target.dataset.kind) runChar(parseInt(e.target.dataset.node,10), e.target.dataset.kind);
-  else if(e.target.id==='submitBtn') doSubmit();
-  else if(e.target.id==='idResetBtn') reset();
-});
-document.getElementById('idPanel').addEventListener('change', e=>{
-  if(e.target.dataset.node && e.target.tagName==='SELECT' && !state.submitted){
-    byId(parseInt(e.target.dataset.node,10)).assigned = e.target.value;
-    renderIdentify();   // refresh submit-button enabled state
-  }
+document.getElementById('fracPanel').addEventListener('change', e=>{
+  const t = e.target;
+  if(t.name && t.name.indexOf('tech')===0)    setTech(parseInt(t.name.slice(4),10), t.value);
+  else if(t.name && t.name.indexOf('ph')===0) setPH(parseInt(t.name.slice(2),10), t.value);
+  else if(t.dataset.assign)                    setAssign(parseInt(t.dataset.assign,10), t.value);
 });
 
 /* init */
