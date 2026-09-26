@@ -28,6 +28,7 @@ If it fails, the script prints `{"error": CODE, ...}` and exits non-zero:
 | Code | What to do |
 |---|---|
 | `NETWORK_BLOCKED` | The sandbox cannot reach youtube.com. Say so plainly and name the host. Ask the user to either allow `www.youtube.com` in the environment's network settings, or paste the transcript (on YouTube: **…** under the video → **Show transcript**, then copy). Save a paste to a file and run `python3 scripts/fetch_transcript.py "<url>" --from-text pasted.txt -o transcript.json`. Never invent the video's content. |
+| `YOUTUBE_BOT_CHECK` | YouTube is reachable but refused this machine's IP address (a redirect to `google.com/sorry`, or "sign in to confirm you're not a bot"). This is common from cloud servers and is not a network setting. Do not try to get around it. Ask the user to paste the transcript and use `--from-text` as above; the title and channel are still filled in from YouTube's oEmbed endpoint. |
 | `NO_TRANSCRIPT` | The video has no captions. Tell the user; offer to summarise a pasted transcript instead. |
 | `VIDEO_UNAVAILABLE` | Private, deleted, age-restricted or region-locked. Ask for another source. |
 | `INVALID_URL` | Ask the user to check the link. |

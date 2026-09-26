@@ -11,8 +11,8 @@ Output JSON:
      "segments": [{"start": 12.3, "duration": 4.1, "text": "..."}]}
 
 On failure, exits non-zero and prints {"error": CODE, "detail": ...} to stderr.
-Codes: INVALID_URL, NETWORK_BLOCKED, NO_TRANSCRIPT, VIDEO_UNAVAILABLE,
-MISSING_DEPENDENCY, UNKNOWN_ERROR.
+Codes: INVALID_URL, NETWORK_BLOCKED, YOUTUBE_BOT_CHECK, NO_TRANSCRIPT,
+VIDEO_UNAVAILABLE, MISSING_DEPENDENCY, UNKNOWN_ERROR.
 """
 
 from __future__ import annotations
@@ -69,11 +69,17 @@ def fetch_metadata(video_id: str) -> dict:
         return {"title": None, "channel": None}
 
 
-def is_network_error(exc: Exception) -> bool:
+def classify_error(exc: Exception) -> str:
     text = f"{type(exc).__name__}: {exc}"
-    return any(k in text for k in ("ProxyError", "ConnectionError", "Tunnel connection failed",
-                                   "Max retries exceeded", "RequestBlocked", "IpBlocked",
-                                   "403 Forbidden", "timed out"))
+    # YouTube answered, but refused this IP: a redirect to google.com/sorry, a
+    # "sign in to confirm you're not a bot" response, or the library's IP-block errors.
+    if any(k in text for k in ("google.com/sorry", "/sorry/index", "RequestBlocked", "IpBlocked",
+                               "PoTokenRequired", "LOGIN_REQUIRED", "not a bot")):
+        return "YOUTUBE_BOT_CHECK"
+    if any(k in text for k in ("ProxyError", "ConnectionError", "Tunnel connection failed",
+                               "Max retries exceeded", "403 Forbidden", "timed out")):
+        return "NETWORK_BLOCKED"
+    return "UNKNOWN_ERROR"
 
 
 def fetch_segments(video_id: str, lang: str) -> tuple[list[dict], str, bool]:
@@ -104,8 +110,7 @@ def fetch_segments(video_id: str, lang: str) -> tuple[list[dict], str, bool]:
     except (yterr.VideoUnavailable, yterr.VideoUnplayable, yterr.AgeRestricted) as exc:
         fail("VIDEO_UNAVAILABLE", str(exc).splitlines()[0], video_id)
     except Exception as exc:  # noqa: BLE001
-        code = "NETWORK_BLOCKED" if is_network_error(exc) else "UNKNOWN_ERROR"
-        fail(code, f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}", video_id)
+        fail(classify_error(exc), f"{type(exc).__name__}: {str(exc).splitlines()[0] if str(exc) else ''}", video_id)
 
 
 def segments_from_text(path: str) -> list[dict]:
