@@ -61,10 +61,16 @@ async src="//gc.zgo.at/count.js"></script>
   /* visible focus everywhere — WCAG 2.4.7 / 2.4.11 */
   iframe:focus-visible{
     outline:3px solid var(--focus);outline-offset:2px;border-radius:var(--radius);}
+
+  /* back to index */
+  .backlink{margin:0 0 14px;font-size:.95rem;}
+  .backlink a{color:var(--accent);text-underline-offset:3px;}
+  .backlink a:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <p class="backlink"><a href="index.html">&larr; All simulations</a></p>
   <div class="sim">
     <div class="sim-head">
       <h1>Interactive 3D Views of Secondary Structures</h1>
