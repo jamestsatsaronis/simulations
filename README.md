@@ -11,16 +11,13 @@ The tools are designed to be hosted on GitHub Pages and embedded in a learning m
 |---|---|
 | [`amino-acid-code-drill.html`](https://jamestsatsaronis.github.io/simulations/amino-acid-code-drill.html) | Practice matching amino acid names with their three-letter and one-letter codes. |
 | [`amino-acid-tags.html`](https://jamestsatsaronis.github.io/simulations/amino-acid-tags.html) | Classify amino acid side chains (for example polar, charged, hydrophobic). |
-| [`amino-acid-ph-sim.html`](https://jamestsatsaronis.github.io/simulations/amino-acid-ph-sim.html) | Watch amino acid protonation states change as pH moves. |
 | [`charge-at-pH.html`](https://jamestsatsaronis.github.io/simulations/charge-at-pH.html) | Practice working out the net charge of amino acids and peptides at a given pH. |
-| [`amino-blaster.html`](https://jamestsatsaronis.github.io/simulations/amino-blaster.html) | An arcade-style game for reinforcing amino acid knowledge. |
 | [`ramachandran-explorer.html`](https://jamestsatsaronis.github.io/simulations/ramachandran-explorer.html) | Explore phi/psi backbone angles on a Ramachandran plot, with 3D views (uses 3Dmol.js). |
 | [`secondary-structure-views.html`](https://jamestsatsaronis.github.io/simulations/secondary-structure-views.html) | Interactive 3D views of protein secondary structure. |
 
 ### Purification and chromatography
 | File | What it does |
 |---|---|
-| [`ion-exchange-animation.html`](https://jamestsatsaronis.github.io/simulations/ion-exchange-animation.html) | Animation of how ion exchange chromatography separates proteins. |
 | [`ion-exchange-chromatography.html`](https://jamestsatsaronis.github.io/simulations/ion-exchange-chromatography.html) | Interactive ion exchange chromatography activity. |
 | [`protein-purification-tool.html`](https://jamestsatsaronis.github.io/simulations/protein-purification-tool.html) | A tutorial activity on protein purification. |
 | [`protein-purification-lab-interleaved.html`](https://jamestsatsaronis.github.io/simulations/protein-purification-lab-interleaved.html) | A virtual purification lab where the steps are interleaved with visual gels. |

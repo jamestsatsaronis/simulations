@@ -144,10 +144,16 @@ async src="//gc.zgo.at/count.js"></script>
   footer code{background:var(--surface-2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:.95em;}
   .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
   @media (prefers-reduced-motion:reduce){*{transition-duration:.001ms !important;animation-duration:.001ms !important;}}
+
+  /* back to index */
+  .backlink{margin:0 0 14px;font-size:.95rem;}
+  .backlink a{color:var(--accent);text-underline-offset:3px;}
+  .backlink a:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <p class="backlink"><a href="index.html">&larr; All simulations</a></p>
   <div class="sim">
     <div class="sim-head">
       <h1>Charge at pH</h1>
