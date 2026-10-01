@@ -36,6 +36,15 @@
            text-underline-offset:3px;}
   .card .d{display:block;margin-top:4px;color:var(--ink-muted);font-size:.95rem;}
   a:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
+  details.lms{margin:20px 0 0;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+  details.lms summary{cursor:pointer;padding:12px 18px;font-weight:600;min-height:44px;}
+  details.lms[open] summary{border-bottom:1px solid var(--border);}
+  details.lms .body{padding:4px 18px 16px;}
+  details.lms ol{padding-left:1.3em;margin:12px 0;}
+  details.lms li{margin-bottom:6px;}
+  pre{margin:8px 0 0;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);
+      border-radius:var(--radius);overflow-x:auto;font-size:.9rem;line-height:1.5;}
+  summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
   footer{margin-top:40px;color:var(--ink-muted);font-size:.9rem;}
   footer a{color:var(--accent);}
 </style>
@@ -44,6 +53,20 @@
 <main class="wrap">
   <h1>Biochemistry simulations</h1>
   <p class="lead">Interactive teaching tools for biochemistry and molecular biology students. Each one runs in your browser with nothing to install.</p>
+  <details class="lms">
+    <summary>Add a simulation to your LMS</summary>
+    <div class="body">
+      <ol>
+        <li>Open the simulation you want and copy its address from the browser bar, for example <code>https://jamestsatsaronis.github.io/simulations/enzyme-kinetics-sim.html</code>.</li>
+        <li>In your LMS page editor, switch to the HTML or source view. In Canvas this is the <em>HTML Editor</em> link at the bottom right of the Rich Content Editor.</li>
+        <li>Paste the embed code below, replacing the address and the title with your simulation's.</li>
+        <li>Save and check the simulation loads. If your LMS strips iframes, link to the address instead, or ask your LMS administrator to allow <code>jamestsatsaronis.github.io</code>.</li>
+      </ol>
+      <pre><code>&lt;iframe src="https://jamestsatsaronis.github.io/simulations/enzyme-kinetics-sim.html"
+        width="100%" height="700" title="Enzyme kinetics"&gt;&lt;/iframe&gt;</code></pre>
+      <p>Use a height of 700 to 900 pixels so students don't need to scroll inside the frame. Give each simulation a short title for screen reader users.</p>
+    </div>
+  </details>
   <section aria-labelledby="h-amino">
     <h2 id="h-amino">Amino acids and proteins</h2>
     <ul class="cards">
