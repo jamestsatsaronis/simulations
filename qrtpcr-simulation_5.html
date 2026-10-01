@@ -1,718 +1,343 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+  qRT-PCR simulation (SYBR Green assay) — rebuilt on the Accessible Simulation
+  template. House style, tokens and typography unchanged. The amplification
+  model, Ct interpolation, standard-curve regression and playback timing are
+  carried over unchanged from the earlier version; only the presentation is new.
+-->
+<html lang="en-AU">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script data-goatcounter="https://jtsatsaronis.goatcounter.com/count"
-async src="//gc.zgo.at/count.js"></script>
-<title>qRT-PCR Simulation — SYBR Green Assay</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+        async src="//gc.zgo.at/count.js"></script>
+<title>qRT-PCR simulation: SYBR Green assay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg-primary: #0a0e17;
-    --bg-secondary: #111827;
-    --bg-card: #1a2233;
-    --bg-card-hover: #1e2a3f;
-    --border: #2a3a52;
-    --text-primary: #edf1f7;
-    --text-secondary: #b0bdd0;
-    --text-muted: #8494ad;
-    --accent-green: #39d98a;
-    --accent-green-dim: #1a7a4a;
-    --accent-green-glow: rgba(57, 217, 138, 0.15);
-    --accent-blue: #4da6ff;
-    --accent-blue-dim: #1a5a99;
-    --accent-orange: #ff8c42;
-    --accent-red: #ff5a5a;
-    --accent-yellow: #ffd23f;
-    --accent-purple: #b388ff;
-    --chart-bg: #0d1320;
-    --threshold-color: #ff5a5a;
-    --grid-color: rgba(42, 58, 82, 0.5);
-    --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+  /* ---------- House style tokens (do not edit) ---------- */
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --surface-2:#f3f4f6; --border:#9aa1ab;
+    --ink:#16191f; --ink-muted:#4b515a; --accent:#1d4ed8; --accent-ink:#ffffff;
+    --focus:#1d4ed8; --radius:4px;
+    --font:'Public Sans',system-ui,-apple-system,sans-serif;
+    --series1:#1d4ed8; --series2:#a8420a; --series3:#6b7280;
   }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 56px;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  .sim{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;}
+  .sim-head h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:700;}
+  .sim-head p{margin:0 0 24px;color:var(--ink-muted);max-width:65ch;}
 
-  body {
-    font-family: var(--font-sans);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.6;
-    font-size: 15px;
-    overflow-x: hidden;
-    min-height: 100vh;
-  }
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;}
+  .grid>div{min-width:0;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
 
-  .app-container {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 24px 32px;
-  }
+  .panel{background:var(--surface-2);border:1px solid var(--border);
+         border-radius:var(--radius);padding:18px;margin-bottom:24px;}
+  .panel:last-child{margin-bottom:0;}
+  .panel h2{font-size:1rem;margin:0 0 14px;font-weight:700;}
+  .panel h3{font-size:.95rem;margin:0 0 6px;font-weight:700;}
 
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-icon {
-    width: 44px; height: 44px;
-    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    flex-shrink: 0;
-  }
-  .header h1 {
-    font-size: 26px; font-weight: 700;
-    letter-spacing: -0.3px;
-  }
-  .header h1 span { color: var(--accent-green); }
-  .header-subtitle {
-    font-size: 15px; color: var(--text-secondary);
-    margin-top: 2px;
-  }
+  /* control row */
+  .control{margin-bottom:22px;}
+  .control:last-child{margin-bottom:0;}
+  .control>label,.control>.sublabel{display:block;font-weight:600;margin:0 0 8px;font-size:.95rem;}
+  .readout{font-variant-numeric:tabular-nums;color:var(--ink-muted);font-weight:400;}
 
-  /* Main Layout */
-  .main-grid {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 24px;
-  }
+  /* slider primitive — keyboard + buttons satisfy WCAG 2.5.7 */
+  .slider-row{display:flex;align-items:center;gap:10px;}
+  .stepbtn{appearance:none;border:2px solid var(--border);background:var(--surface);
+    color:var(--ink);font:inherit;font-size:1.2rem;font-weight:700;line-height:1;
+    width:44px;height:44px;border-radius:var(--radius);cursor:pointer;flex:none;}
+  .stepbtn:hover{border-color:var(--accent);}
+  input[type=range]{flex:1;min-width:0;height:44px;accent-color:var(--accent);cursor:pointer;}
 
-  /* Cards */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .card-title {
-    font-size: 15px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .card-title .dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
+  /* segmented radio primitive (also used for the sample checkboxes) */
+  fieldset{border:0;margin:0;padding:0;min-width:0;}
+  legend{font-weight:600;margin-bottom:8px;font-size:.95rem;padding:0;}
+  .radios{display:flex;flex-direction:column;gap:8px;}
+  .radios.row{flex-direction:row;flex-wrap:wrap;}
+  .radio{display:flex;align-items:center;gap:10px;border:2px solid var(--border);
+    background:var(--surface);border-radius:var(--radius);padding:10px 12px;
+    cursor:pointer;min-height:44px;}
+  .radio:hover{border-color:var(--accent);}
+  .radio input{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0;}
+  .radio.checked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+  .radio small{display:block;color:var(--ink-muted);font-weight:400;font-size:.85rem;line-height:1.3;}
+  .radio svg{flex:none;}
 
-  /* Amplification Chart */
-  .chart-container {
-    position: relative;
-    background: var(--chart-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .chart-canvas-wrap {
-    position: relative;
-    width: 100%;
-    height: 420px;
-  }
-  .chart-canvas-wrap canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-  .chart-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: rgba(17, 24, 39, 0.6);
-    border-top: 1px solid var(--border);
-  }
-  .chart-controls label {
-    font-size: 14px;
-    color: var(--text-secondary);
-    font-weight: 500;
-  }
+  /* buttons */
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{appearance:none;font:inherit;font-weight:600;min-height:44px;padding:0 18px;
+    border-radius:var(--radius);cursor:pointer;border:2px solid var(--accent);}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--border);}
+  .btn:hover{filter:brightness(.96);}
 
-  /* Toggle Switch */
-  .toggle-group {
-    display: flex;
-    background: var(--bg-primary);
-    border-radius: 6px;
-    padding: 2px;
-    gap: 2px;
-  }
-  .toggle-btn {
-    padding: 6px 16px;
-    font-size: 14px;
-    font-family: var(--font-mono);
-    font-weight: 500;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background: transparent;
-    color: var(--text-muted);
-    transition: all 0.2s;
-  }
-  .toggle-btn.active {
-    background: var(--accent-green-dim);
-    color: var(--accent-green);
-  }
+  /* visible focus everywhere — WCAG 2.4.7 / 2.4.11 */
+  button:focus-visible,input:focus-visible,.radio:focus-within,summary:focus-visible{
+    outline:3px solid var(--focus);outline-offset:2px;}
 
-  /* Cycle Slider */
-  .cycle-slider-section {
-    margin-top: 20px;
-  }
-  .slider-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .slider-header label {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-secondary);
-  }
-  .cycle-display {
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent-green);
-  }
-  .cycle-display span {
-    font-size: 15px;
-    color: var(--text-muted);
-    font-weight: 400;
-  }
-  input[type="range"] {
-    -webkit-appearance: none;
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--bg-primary);
-    outline: none;
-    margin: 8px 0;
-  }
-  input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--accent-green);
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(57, 217, 138, 0.4);
-    transition: box-shadow 0.2s;
-  }
-  input[type="range"]::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 16px rgba(57, 217, 138, 0.6);
-  }
-  input[type="range"]::-moz-range-thumb {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--accent-green);
-    cursor: pointer;
-    border: none;
-  }
+  canvas{width:100%;height:auto;display:block;border-radius:var(--radius);
+    background:var(--surface);border:1px solid var(--border);}
+  svg.framed{width:100%;height:auto;display:block;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
+  .legend{display:flex;gap:10px 18px;flex-wrap:wrap;margin-top:12px;font-size:.9rem;color:var(--ink-muted);}
+  .legend span{display:inline-flex;align-items:center;gap:7px;}
+  .legend svg{flex:none;}
 
-  /* Cycle stages */
-  .cycle-stages {
-    display: flex;
-    gap: 4px;
-    margin-top: 12px;
-  }
-  .stage {
-    flex: 1;
-    padding: 10px 8px;
-    border-radius: 8px;
-    text-align: center;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    transition: all 0.4s ease;
-  }
-  .stage.active {
-    border-color: transparent;
-  }
-  .stage.denature.active {
-    background: rgba(255, 90, 90, 0.12);
-    border-color: var(--accent-red);
-  }
-  .stage.anneal.active {
-    background: rgba(77, 166, 255, 0.12);
-    border-color: var(--accent-blue);
-  }
-  .stage.extend.active {
-    background: rgba(57, 217, 138, 0.12);
-    border-color: var(--accent-green);
-  }
-  .stage-temp {
-    font-family: var(--font-mono);
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-  .stage.denature .stage-temp { color: var(--accent-red); }
-  .stage.anneal .stage-temp { color: var(--accent-blue); }
-  .stage.extend .stage-temp { color: var(--accent-green); }
-  .stage-name {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    margin-bottom: 2px;
-  }
-  .stage-desc {
-    font-size: 12px;
-    color: var(--text-muted);
-    line-height: 1.4;
-  }
+  .readout-box{padding:14px 16px;border-radius:var(--radius);
+    background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+    border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));font-size:.95rem;}
+  .readout-box p{margin:0;}
+  .readout-box strong{font-variant-numeric:tabular-nums;}
+  .readout-box dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:4px 16px;}
+  .readout-box dt{color:var(--ink-muted);}
+  .readout-box dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;}
 
-  /* Playback controls */
-  .playback-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 14px;
-  }
-  .play-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 20px;
-    background: var(--accent-green-dim);
-    color: var(--accent-green);
-    border: 1px solid rgba(57, 217, 138, 0.3);
-    border-radius: 8px;
-    font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .play-btn:hover {
-    background: rgba(57, 217, 138, 0.25);
-  }
-  .play-btn svg { width: 14px; height: 14px; fill: currentColor; }
+  /* data table = visible readout AND text alternative */
+  .datatable{width:100%;border-collapse:collapse;margin-top:14px;font-variant-numeric:tabular-nums;background:var(--surface);}
+  .datatable caption{text-align:left;font-weight:700;color:var(--ink);margin-bottom:6px;font-size:.95rem;}
+  .datatable th,.datatable td{border:1px solid var(--border);padding:6px 10px;text-align:left;font-size:.9rem;}
+  .datatable th{font-weight:700;}
+  .datatable th[scope=row]{font-weight:600;}
+  .datatable tr.off th,.datatable tr.off td{color:var(--ink-muted);}
+  .sample-cell{display:inline-flex;align-items:center;gap:8px;}
 
-  .speed-btn {
-    padding: 6px 14px;
-    background: var(--bg-primary);
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .speed-btn.active {
-    color: var(--accent-blue);
-    border-color: var(--accent-blue-dim);
-    background: rgba(77, 166, 255, 0.08);
-  }
+  /* text alternative for the visuals — fill this in, it is not optional */
+  .text-alt{margin-top:14px;font-size:.9rem;color:var(--ink-muted);max-width:70ch;}
+  .text-alt p{margin:0 0 6px;}
+  .text-alt table{border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .text-alt th,.text-alt td{border:1px solid var(--border);padding:4px 10px;text-align:left;}
+  .text-alt summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;}
 
-  /* Right Panel */
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+  .note{margin:10px 0 0;font-size:.82rem;color:var(--ink-muted);}
+  .note:empty{display:none;}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
 
-  /* Sample Legend */
-  .sample-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .sample-item {
-    display: grid;
-    grid-template-columns: 10px 1fr auto auto;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .sample-item:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--border);
-  }
-  .sample-item.dimmed {
-    opacity: 0.3;
-  }
-  .sample-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-  }
-  .sample-name {
-    font-size: 15px;
-    font-weight: 500;
-  }
-  .sample-conc {
-    font-family: var(--font-mono);
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-  .sample-ct {
-    font-family: var(--font-mono);
-    font-size: 15px;
-    font-weight: 600;
-    min-width: 60px;
-    text-align: right;
-  }
+  /* back to index */
+  .backlink{margin:0 0 14px;font-size:.95rem;}
+  .backlink a{color:var(--accent);text-underline-offset:3px;}
+  .backlink a:focus-visible{outline:3px solid var(--focus);outline-offset:2px;}
 
-  /* Standard Curve */
-  .std-curve-container {
-    position: relative;
-    background: var(--chart-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .std-curve-canvas-wrap {
-    position: relative;
-    width: 100%;
-    height: 240px;
-  }
-  .std-curve-canvas-wrap canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-  .std-curve-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    padding: 10px 12px;
-    background: rgba(17, 24, 39, 0.6);
-    border-top: 1px solid var(--border);
-  }
-  .stat-item {
-    text-align: center;
-  }
-  .stat-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .stat-value {
-    font-family: var(--font-mono);
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--accent-green);
-  }
+  /* ---------- domain additions (tokens only, no new colours) ---------- */
 
-  /* DNA Visualisation — Dual Panel */
-  .dna-vis-dual {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    gap: 12px;
-    min-height: 220px;
-  }
-  .dna-molecule-panel {
-    background: var(--chart-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .dna-molecule-header {
-    padding: 8px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--text-secondary);
-    background: rgba(17, 24, 39, 0.5);
-  }
-  .dna-molecule-header strong {
-    color: var(--accent-green);
-    font-family: var(--font-mono);
-    font-weight: 700;
-  }
-  .dna-molecule-count {
-    font-family: var(--font-mono);
-    font-size: 13px;
-  }
-  .dna-molecule-area {
-    flex: 1;
-    position: relative;
-    min-height: 150px;
-  }
-  .dna-molecule-area canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-  .dna-molecule-overflow {
-    position: absolute;
-    bottom: 8px; left: 0; right: 0;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-  }
-  .dna-molecule-legend {
-    padding: 6px 12px;
-    display: flex;
-    gap: 14px;
-    font-size: 12px;
-    color: var(--text-muted);
-    border-top: 1px solid var(--border);
-    background: rgba(17, 24, 39, 0.5);
-  }
-  .dna-legend-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .dna-legend-swatch {
-    display: inline-block;
-    width: 8px; height: 8px;
-    border-radius: 2px;
-  }
+  /* steps within a cycle — numbered and text-labelled, not colour-only */
+  .stages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .stage{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:2px solid var(--border);
+    border-radius:var(--radius);background:var(--surface);font-size:.9rem;line-height:1.35;color:var(--ink-muted);}
+  .stage .top{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink);}
+  .stage .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:50%;border:2px solid var(--border);font-size:.8rem;flex:none;}
+  .stage .temp{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .stage .state{display:none;margin-left:auto;font-size:.72rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:.04em;color:var(--accent);}
+  .stage[aria-current="step"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface));}
+  .stage[aria-current="step"] .num{border-color:var(--accent);background:var(--accent);color:var(--accent-ink);}
+  .stage[aria-current="step"] .state{display:inline;}
+  @media (max-width:520px){.stages{grid-template-columns:1fr;}}
 
-  .dna-bar-panel {
-    background: var(--chart-bg);
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  .dna-bar-header {
-    padding: 8px 12px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    border-bottom: 1px solid var(--border);
-    background: rgba(17, 24, 39, 0.5);
-  }
-  .dna-bar-area {
-    flex: 1;
-    position: relative;
-    min-height: 150px;
-  }
-  .dna-bar-area canvas {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
-
-  @media (max-width: 800px) {
-    .dna-vis-dual {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Info boxes */
-  .info-box {
-    padding: 14px 16px;
-    background: rgba(57, 217, 138, 0.05);
-    border: 1px solid rgba(57, 217, 138, 0.15);
-    border-radius: 8px;
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-  }
-  .info-box strong {
-    color: var(--accent-green);
-  }
-
-  /* Responsive */
-  @media (max-width: 1100px) {
-    .main-grid {
-      grid-template-columns: 1fr;
-    }
-    .app-container {
-      padding: 16px;
-    }
-  }
-  @media (max-width: 600px) {
-    .cycle-stages {
-      flex-direction: column;
-    }
-    .chart-canvas-wrap {
-      height: 300px;
-    }
-  }
+  .view-caption{margin:0 0 10px;font-size:.95rem;}
+  .view-caption strong{font-variant-numeric:tabular-nums;}
+  .subplot{margin-top:22px;}
+  .explain{margin:16px 0 0;font-size:1rem;max-width:70ch;}
+  .mt{margin-top:14px;}
 </style>
 </head>
 <body>
-<div class="app-container">
-  <!-- Header -->
-  <div class="header">
-    <div class="header-icon">🧬</div>
-    <div>
-      <h1>qPCR Simulation</h1>
+<div class="wrap">
+  <p class="backlink"><a href="index.html" target="_top">&larr; All simulations</a></p>
+  <div class="sim">
+    <div class="sim-head">
+      <h1>qRT-PCR simulation: SYBR Green assay</h1>
+      <p>Step through 40 PCR cycles for a 10-fold dilution series of template DNA. Watch each
+         sample's fluorescence rise and cross the threshold to give its C<sub>t</sub> value, then
+         use the standard curve to work out the PCR efficiency.</p>
     </div>
-  </div>
 
-  <!-- Main Grid -->
-  <div class="main-grid">
-    <!-- Left Column -->
-    <div class="left-panel">
-      <!-- Cycle Controls (TOP — above everything) -->
-      <div class="card">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-green);"></span>
-          Cycle Controls
-        </div>
+    <div class="grid">
+      <!-- LEFT: controls + template DNA view -->
+      <div>
+        <div class="panel">
+          <h2>Controls</h2>
 
-        <div class="cycle-slider-section" style="margin-top: 0;">
-          <div class="slider-header">
-            <label>Current Cycle</label>
-            <div class="cycle-display" id="cycleDisplay">1 <span>/ 40</span></div>
-          </div>
-          <input type="range" id="cycleSlider" min="1" max="40" value="1" step="1">
-
-          <!-- Cycle Stages -->
-          <div class="cycle-stages">
-            <div class="stage denature" id="stageDenature">
-              <div class="stage-temp">95 °C</div>
-              <div class="stage-name">Denature</div>
-              <div class="stage-desc">dsDNA → ssDNA</div>
+          <!-- SLIDER PRIMITIVE -->
+          <div class="control">
+            <label for="cycleSlider">PCR cycle
+              <span class="readout">(<span id="cycleVal">1</span> of 40)</span>
+            </label>
+            <div class="slider-row">
+              <button type="button" class="stepbtn" id="cycleDown" aria-label="Previous cycle">&minus;</button>
+              <input type="range" id="cycleSlider" min="1" max="40" value="1" step="1" aria-describedby="cycleHint">
+              <button type="button" class="stepbtn" id="cycleUp" aria-label="Next cycle">+</button>
             </div>
-            <div class="stage anneal" id="stageAnneal">
-              <div class="stage-temp">60 °C</div>
-              <div class="stage-name">Anneal</div>
-              <div class="stage-desc">Primers bind</div>
-            </div>
-            <div class="stage extend" id="stageExtend">
-              <div class="stage-temp">72 °C</div>
-              <div class="stage-name">Extend</div>
-              <div class="stage-desc">Taq synthesis + SYBR binds dsDNA</div>
-            </div>
+            <p class="vh" id="cycleHint">Use the plus and minus buttons or the arrow keys to change the cycle without dragging.</p>
+            <p class="vh" id="cycleAnnounce" aria-live="polite"></p>
           </div>
 
-          <!-- Playback -->
-          <div class="playback-controls">
-            <button class="play-btn" id="playBtn" onclick="togglePlay()">
-              <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-              <span id="playLabel">Play</span>
-            </button>
-            <button class="speed-btn active" data-speed="1" onclick="setSpeed(1)">1×</button>
-            <button class="speed-btn" data-speed="2" onclick="setSpeed(2)">2×</button>
-            <button class="speed-btn" data-speed="5" onclick="setSpeed(5)">5×</button>
+          <div class="control">
+            <p class="sublabel" id="stagesHead">Step within the cycle</p>
+            <ol class="stages" aria-labelledby="stagesHead">
+              <li class="stage" id="stageDenature">
+                <span class="top"><span class="num">1</span>Denature<span class="state">Now</span></span>
+                <span class="temp">95 °C</span>
+                <span>dsDNA → ssDNA</span>
+              </li>
+              <li class="stage" id="stageAnneal">
+                <span class="top"><span class="num">2</span>Anneal<span class="state">Now</span></span>
+                <span class="temp">60 °C</span>
+                <span>Primers bind</span>
+              </li>
+              <li class="stage" id="stageExtend">
+                <span class="top"><span class="num">3</span>Extend<span class="state">Now</span></span>
+                <span class="temp">72 °C</span>
+                <span>Taq synthesis + SYBR binds dsDNA</span>
+              </li>
+            </ol>
           </div>
-        </div>
-      </div>
 
-<!-- Amplification Plot -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-green);"></span>
-          Amplification Plot — Fluorescence vs Cycle
-        </div>
-        <div class="chart-container">
-          <div class="chart-canvas-wrap">
-            <canvas id="ampChart"></canvas>
-          </div>
-          <div class="chart-controls">
-            <label>Y-Axis Scale</label>
-            <div class="toggle-group">
-              <button class="toggle-btn active" data-scale="linear" onclick="setScale('linear')">Linear</button>
-              <button class="toggle-btn" data-scale="log" onclick="setScale('log')">Log₁₀</button>
+          <div class="control">
+            <div class="btnrow">
+              <button type="button" class="btn btn-primary" id="playBtn" aria-pressed="false">Play animation</button>
+              <button type="button" class="btn btn-ghost" id="resetBtn">Reset</button>
             </div>
+            <p class="note" id="motionNote"></p>
           </div>
-        </div>
-      </div>
 
-      <!-- DNA Visualisation -->
-      <div class="card" style="margin-top: 20px;">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-blue);"></span>
-          Template Visualisation
-        </div>
-
-        <!-- Two-panel layout: molecule view + bar chart -->
-        <div class="dna-vis-dual">
-          <!-- Left: molecule schematic -->
-          <div class="dna-molecule-panel">
-            <div class="dna-molecule-header">
-              <span class="dna-molecule-label">dsDNA Molecules at Cycle <strong id="dnaCycleLabel">1</strong></span>
-              <span class="dna-molecule-count">= <strong id="dnaCount">1</strong> copies</span>
-            </div>
-            <div class="dna-molecule-area">
-              <canvas id="dnaCanvas"></canvas>
-              <div class="dna-molecule-overflow" id="dnaOverflow" style="display:none;">
-                <span id="dnaOverflowText"></span>
+          <!-- SEGMENTED RADIO PRIMITIVE -->
+          <div class="control">
+            <fieldset>
+              <legend>Playback speed</legend>
+              <div class="radios row" id="speedGroup">
+                <label class="radio checked"><input type="radio" name="speed" value="1" checked> 1&times;</label>
+                <label class="radio"><input type="radio" name="speed" value="2"> 2&times;</label>
+                <label class="radio"><input type="radio" name="speed" value="5"> 5&times;</label>
               </div>
-            </div>
-            <div class="dna-molecule-legend">
-              <span class="dna-legend-item"><span class="dna-legend-swatch" style="background: #4da6ff;"></span><span class="dna-legend-swatch" style="background: #39d98a; margin-left:-4px;"></span> dsDNA</span>
-              <span class="dna-legend-item"><span class="dna-legend-swatch" style="background: rgba(57,217,138,0.35); border-radius:50%;"></span> SYBR Green</span>
+            </fieldset>
+          </div>
+
+          <div class="control">
+            <fieldset>
+              <legend>Amplification plot y-axis</legend>
+              <div class="radios row" id="scaleGroup">
+                <label class="radio checked"><input type="radio" name="scale" value="linear" checked> Linear</label>
+                <label class="radio"><input type="radio" name="scale" value="log"> <span>Logarithmic (log<sub>10</sub>)</span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <div class="control">
+            <fieldset>
+              <legend>Samples shown on the plots</legend>
+              <div class="radios row" id="sampleGroup"><!-- built from SAMPLES --></div>
+            </fieldset>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Template DNA in sample 1</h2>
+          <p class="view-caption">dsDNA molecules at cycle <strong id="dnaCycleLabel">1</strong>:
+             <strong id="dnaCount">1</strong> copies</p>
+          <canvas id="dnaCanvas" width="880" height="480" role="img"
+                  aria-label="Grid of double-stranded DNA molecules for sample 1. More of the grid fills as copies build up, cycle by cycle."
+                  aria-describedby="dnaAlt"></canvas>
+          <p class="note" id="dnaOverflow" hidden></p>
+          <div class="legend" aria-hidden="true">
+            <span><svg width="16" height="24" viewBox="0 0 16 24">
+                <line x1="4" y1="9" x2="12" y2="9" style="stroke:var(--series3)" stroke-width="1.2"/>
+                <line x1="4" y1="15" x2="12" y2="15" style="stroke:var(--series3)" stroke-width="1.2"/>
+                <rect x="6" y="4" width="4" height="4" style="fill:var(--series2)"/>
+                <rect x="6" y="16" width="4" height="4" style="fill:var(--series2)"/>
+                <line x1="4" y1="2" x2="4" y2="22" style="stroke:var(--series1)" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="12" y1="2" x2="12" y2="22" style="stroke:var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>dsDNA: two strands joined by base pairs</span>
+            <span><svg width="12" height="12" viewBox="0 0 12 12"><rect x="3" y="3" width="6" height="6" style="fill:var(--series2)"/></svg>SYBR Green bound to dsDNA (small squares)</span>
+            <span><svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="2.5" style="fill:var(--border)"/></svg>Empty slot</span>
+          </div>
+
+          <div class="plot subplot">
+            <h3>Copy number per cycle (log<sub>10</sub> scale)</h3>
+            <svg id="barPlot" class="framed" viewBox="0 0 400 210" role="img"
+                 aria-label="Bar chart of sample 1 copy number for every cycle on a log scale. Bars for cycles already run are filled; later cycles are outlined."
+                 aria-describedby="dnaAlt"></svg>
+            <div class="legend" aria-hidden="true">
+              <span><svg width="12" height="16" viewBox="0 0 12 16"><rect x="1.5" y="1.5" width="9" height="13" style="fill:var(--series1);stroke:var(--series1)"/></svg>Cycles run (darker = more SYBR signal)</span>
+              <span><svg width="12" height="16" viewBox="0 0 12 16"><rect x="1.5" y="1.5" width="9" height="13" style="fill:var(--surface);stroke:var(--border)"/></svg>Cycles still to come</span>
             </div>
           </div>
 
-          <!-- Right: log-scale copy number bar chart across cycles -->
-          <div class="dna-bar-panel">
-            <div class="dna-bar-header">Copy Number per Cycle (log₁₀ scale)</div>
-            <div class="dna-bar-area">
-              <canvas id="dnaBarChart"></canvas>
-            </div>
-          </div>
+          <p class="explain">Each cycle, template dsDNA approximately <strong>doubles</strong>
+             (efficiency-dependent). At 95% efficiency, copies increase by a factor of 1.95&times; per
+             cycle. <strong>SYBR Green I</strong> intercalates into dsDNA, fluorescing ~1000&times;
+             brighter than when free in solution, so fluorescence is proportional to total dsDNA.
+             The bar chart shows the exponential accumulation on a log<sub>10</sub> scale; notice each
+             bar grows by a near-constant increment (log<sub>10</sub>&nbsp;1.95 &asymp; 0.29) until the
+             plateau phase.</p>
+          <div class="text-alt" id="dnaAlt"></div>
         </div>
-
-        <div class="info-box" style="margin-top: 10px;">
-          Each cycle, template dsDNA approximately <strong>doubles</strong> (efficiency-dependent). At 95% efficiency, copies increase by a factor of 1.95× per cycle. <strong>SYBR Green I</strong> intercalates into dsDNA, fluorescing ~1000× brighter than when free in solution — so fluorescence is proportional to total dsDNA. The bar chart shows the exponential accumulation on a log₁₀ scale; notice each bar grows by a near-constant increment (log₁₀ 1.95 ≈ 0.29) until the plateau phase.
-        </div>
-      </div>     
-    </div>
-
-    <!-- Right Column -->
-    <div class="right-panel">
-      <!-- Samples -->
-      <div class="card">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-blue);"></span>
-          Dilution Series (10-fold)
-        </div>
-        <div class="sample-list" id="sampleList"></div>
       </div>
 
-      <!-- Standard Curve -->
-      <div class="card">
-        <div class="card-title">
-          <span class="dot" style="background: var(--accent-orange);"></span>
-          Standard Curve
-        </div>
-        <div class="std-curve-container">
-          <div class="std-curve-canvas-wrap">
-            <canvas id="stdCurveChart"></canvas>
-          </div>
-          <div class="std-curve-stats">
-            <div class="stat-item">
-              <div class="stat-label">Slope</div>
-              <div class="stat-value" id="statSlope">—</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">R²</div>
-              <div class="stat-value" id="statR2">—</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-label">Efficiency</div>
-              <div class="stat-value" id="statEff">—</div>
-            </div>
+      <!-- RIGHT: outputs -->
+      <div>
+        <div class="panel plot">
+          <h2>Amplification plot: fluorescence against cycle</h2>
+          <svg id="ampPlot" class="framed" viewBox="0 0 400 280" role="img"
+               aria-label="Amplification plot of normalised fluorescence against cycle number for the five-sample dilution series, with a dashed threshold line."
+               aria-describedby="ampAltText"></svg>
+          <div class="legend" id="ampLegend" aria-hidden="true"><!-- built from SAMPLES --></div>
+          <p class="note">Filled markers show the current cycle. Open markers on dotted drop lines show
+             each sample's C<sub>t</sub>, the cycle at which its curve crosses the dashed threshold.</p>
+          <div class="text-alt" id="ampAlt">
+            <p id="ampAltText"></p>
+            <details>
+              <summary>Data table: fluorescence by cycle</summary>
+              <table>
+                <caption class="vh">Normalised fluorescence for each shown sample at sampled cycles up to the current cycle</caption>
+                <thead id="ampAltHead"></thead>
+                <tbody id="ampAltBody"></tbody>
+              </table>
+            </details>
           </div>
         </div>
-        <div class="info-box" style="margin-top: 10px;">
-          PCR efficiency is calculated from the slope: <strong>E = 10<sup>(−1/slope)</sup> − 1</strong>. An ideal efficiency of 100% yields a slope of −3.32, meaning each 10-fold dilution shifts the C<sub>t</sub> by ~3.32 cycles.
+
+        <div class="panel">
+          <h2>Dilution series (10-fold)</h2>
+          <div class="readout-box" aria-live="polite"><p id="ctSummary"></p></div>
+          <table class="datatable">
+            <caption>C<sub>t</sub> for each sample at the current cycle</caption>
+            <thead><tr><th scope="col">Sample</th><th scope="col">Starting copies</th><th scope="col">C<sub>t</sub></th></tr></thead>
+            <tbody id="ctBody"></tbody>
+          </table>
+          <p class="note">A dash means the sample has not reached the threshold by the current cycle.</p>
+        </div>
+
+        <div class="panel plot">
+          <h2>Standard curve</h2>
+          <svg id="stdPlot" class="framed" viewBox="0 0 400 250" role="img"
+               aria-label="Standard curve of Ct against starting copy number on a log scale, with a dashed line of best fit."
+               aria-describedby="stdAlt"></svg>
+          <div class="legend" aria-hidden="true">
+            <span><svg width="30" height="16" viewBox="0 0 30 16"><line x1="1" y1="8" x2="29" y2="8" style="stroke:var(--ink-muted)" stroke-width="2" stroke-dasharray="6 4"/></svg>Line of best fit</span>
+            <span>Points use the sample shapes and labels</span>
+          </div>
+          <div class="readout-box mt" aria-live="polite">
+            <dl>
+              <dt>Slope</dt><dd id="statSlope">—</dd>
+              <dt>R<sup>2</sup></dt><dd id="statR2">—</dd>
+              <dt>Efficiency</dt><dd id="statEff">—</dd>
+            </dl>
+          </div>
+          <p class="explain">PCR efficiency is calculated from the slope:
+             <strong>E = 10<sup>(&minus;1/slope)</sup> &minus; 1</strong>. An ideal efficiency of 100%
+             yields a slope of &minus;3.32, meaning each 10-fold dilution shifts the C<sub>t</sub> by
+             ~3.32 cycles.</p>
+          <div class="text-alt" id="stdAlt"></div>
         </div>
       </div>
     </div>
@@ -720,20 +345,38 @@ async src="//gc.zgo.at/count.js"></script>
 </div>
 
 <script>
-// ============================================================
-// qRT-PCR SIMULATION ENGINE
-// Scientifically accurate model using SYBR Green I detection
-// ============================================================
+/* ===========================================================================
+   COLOURS — house series colours, read once for SVG and canvas drawing
+   =========================================================================== */
+const cs = getComputedStyle(document.documentElement);
+const COL = {
+  s1: cs.getPropertyValue('--series1').trim(),
+  s2: cs.getPropertyValue('--series2').trim(),
+  s3: cs.getPropertyValue('--series3').trim(),
+  ink: cs.getPropertyValue('--ink').trim(),
+  inkMuted: cs.getPropertyValue('--ink-muted').trim(),
+  border: cs.getPropertyValue('--border').trim(),
+  surf: cs.getPropertyValue('--surface').trim(),
+  grid: '#e5e7eb'            // decorative gridlines only
+};
 
+/* ===========================================================================
+   MODEL — unchanged from the earlier version of this simulation.
+   Amplification at 95% efficiency with a logistic plateau, SYBR Green
+   fluorescence proportional to dsDNA, Ct by linear interpolation at the
+   threshold, and a least-squares standard curve.
+   =========================================================================== */
 const TOTAL_CYCLES = 40;
 
-// Sample definitions: 10-fold dilution series
+// Sample definitions: 10-fold dilution series (copy numbers unchanged).
+// Each sample also has a short label, a marker shape and a line style, so it
+// can be told apart without colour.
 const SAMPLES = [
-  { name: 'Sample 1', initCopies: 1e6,  color: '#39d98a' },
-  { name: 'Sample 2', initCopies: 1e5,  color: '#4da6ff' },
-  { name: 'Sample 3', initCopies: 1e4,  color: '#ffd23f' },
-  { name: 'Sample 4', initCopies: 1e3,  color: '#ff8c42' },
-  { name: 'Sample 5', initCopies: 1e2,  color: '#b388ff' },
+  { name: 'Sample 1', short: 'S1', initCopies: 1e6, shape: 'circle',   color: COL.s1, dash: null  },
+  { name: 'Sample 2', short: 'S2', initCopies: 1e5, shape: 'square',   color: COL.s2, dash: '7 4' },
+  { name: 'Sample 3', short: 'S3', initCopies: 1e4, shape: 'triangle', color: COL.s1, dash: null  },
+  { name: 'Sample 4', short: 'S4', initCopies: 1e3, shape: 'diamond',  color: COL.s2, dash: '7 4' },
+  { name: 'Sample 5', short: 'S5', initCopies: 1e2, shape: 'pentagon', color: COL.s1, dash: null  },
 ];
 
 // PCR parameters
@@ -749,15 +392,10 @@ let isPlaying = false;
 let playSpeed = 1;
 let playInterval = null;
 let animStage = 0; // 0=denature, 1=anneal, 2=extend
-let animTimer = null;
 let sampleVisibility = [true, true, true, true, true];
 
-// ============================================================
-// FLUORESCENCE MODEL
-// ============================================================
 // Models amplification with logistic plateau, baseline noise,
 // and SYBR Green proportionality to dsDNA quantity
-
 function computeFluorescence(initCopies, cycle) {
   // Amplification with efficiency and logistic plateau
   const amplifiedCopies = initCopies * Math.pow(1 + PCR_EFFICIENCY, cycle);
@@ -796,39 +434,146 @@ function computeCt(curveIndex, thresh) {
   return null; // Never crosses threshold
 }
 
-// ============================================================
-// CANVAS RENDERING — AMPLIFICATION CHART
-// ============================================================
+// Standard curve: least-squares fit of Ct against log10(initial copies)
+// for the samples currently shown.
+function fitStandardCurve() {
+  const ctVals = SAMPLES.map((s, i) => ({
+    logConc: Math.log10(s.initCopies),
+    ct: computeCt(i, threshold),
+    sample: s,
+    visible: sampleVisibility[i]
+  })).filter(d => d.ct !== null);
 
-const ampCanvas = document.getElementById('ampChart');
-const ampCtx = ampCanvas.getContext('2d');
-
-const chartPadding = { top: 30, right: 30, bottom: 50, left: 70 };
-
-function resizeCanvas(canvas) {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
-  return { w: rect.width, h: rect.height };
+  let slope = 0, intercept = 0, r2 = 0;
+  const visibleCts = ctVals.filter(d => d.visible);
+  if (visibleCts.length >= 2) {
+    const n = visibleCts.length;
+    const sumX = visibleCts.reduce((a, d) => a + d.logConc, 0);
+    const sumY = visibleCts.reduce((a, d) => a + d.ct, 0);
+    const sumXY = visibleCts.reduce((a, d) => a + d.logConc * d.ct, 0);
+    const sumX2 = visibleCts.reduce((a, d) => a + d.logConc * d.logConc, 0);
+    slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    intercept = (sumY - slope * sumX) / n;
+    const meanY = sumY / n;
+    const ssTot = visibleCts.reduce((a, d) => a + (d.ct - meanY) ** 2, 0);
+    const ssRes = visibleCts.reduce((a, d) => a + (d.ct - (slope * d.logConc + intercept)) ** 2, 0);
+    r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+  }
+  const eff = slope ? (Math.pow(10, -1 / slope) - 1) * 100 : 0;
+  return { ctVals, visibleCts, slope, intercept, r2, eff };
 }
 
-function drawAmpChart() {
-  const { w, h } = resizeCanvas(ampCanvas);
-  const ctx = ampCtx;
-  ctx.clearRect(0, 0, w, h);
+// Copy numbers per cycle for Sample 1 (used in the template view)
+function getCopiesAtCycle(cycle) {
+  const raw = SAMPLES[0].initCopies * Math.pow(1 + PCR_EFFICIENCY, cycle);
+  // Apply same logistic plateau as fluorescence model
+  return PLATEAU_COPIES * raw / (PLATEAU_COPIES + raw);
+}
 
-  const plotL = chartPadding.left;
-  const plotR = w - chartPadding.right;
-  const plotT = chartPadding.top;
-  const plotB = h - chartPadding.bottom;
-  const plotW = plotR - plotL;
-  const plotH = plotB - plotT;
+// Map the real copy count to a displayable molecule count (0..MAX_MOLECULES)
+// using a log mapping, so early doublings are clearly visible and the panel
+// fills to MAX at high cycle numbers.
+const MAX_MOLECULES = 120;
+
+function getMoleculeDisplayCount(cycle) {
+  if (cycle <= 0) return 0;
+  const copies = getCopiesAtCycle(cycle);
+  const copiesAtZero = getCopiesAtCycle(0);
+  const copiesAtMax = getCopiesAtCycle(TOTAL_CYCLES);
+  const logMin = Math.log10(Math.max(copiesAtZero, 1));
+  const logMax = Math.log10(copiesAtMax);
+  const logCur = Math.log10(Math.max(copies, 1));
+  const frac = Math.max(0, Math.min(1, (logCur - logMin) / (logMax - logMin)));
+  return Math.max(1, Math.round(frac * MAX_MOLECULES));
+}
+
+/* ===========================================================================
+   HELPERS — formatting, SVG building and sample markers
+   =========================================================================== */
+function superscript(n) {
+  const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶',
+                '7': '⁷', '8': '⁸', '9': '⁹', '-': '⁻' };
+  return String(n).split('').map(c => sup[c] || c).join('');
+}
+// 1950000 -> "1.95 × 10⁶"
+function sci(v, digits) {
+  const [m, e] = v.toExponential(digits).split('e');
+  return m + ' × 10' + superscript(parseInt(e, 10));
+}
+// the same number written out for screen readers
+function sciSpoken(v, digits) {
+  const [m, e] = v.toExponential(digits).split('e');
+  return m + ' times 10 to the power ' + parseInt(e, 10);
+}
+const pow10 = v => '10' + superscript(Math.round(Math.log10(v)));
+const fmtCopies = (copies, digits) => {
+  const copyInt = Math.round(copies);
+  return copyInt > 1e6 ? sci(copies, digits) : copyInt.toLocaleString('en-AU');
+};
+
+function setText(id, v) {
+  const e = document.getElementById(id), s = String(v);
+  if (e.textContent !== s) e.textContent = s;     // no rewrite = no repeat announcement
+}
+
+const NS = 'http://www.w3.org/2000/svg';
+function el(t, a) { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; }
+function add(svg, t, a) { const e = el(t, a); svg.appendChild(e); return e; }
+function label(svg, x, y, s, a) {
+  const t = add(svg, 'text', Object.assign({ x, y, 'font-size': 11, fill: COL.inkMuted }, a || {}));
+  t.textContent = s;
+  return t;
+}
+// In-plot label with a white halo, so it stays legible where it meets a line
+const HALO = { stroke: '#ffffff', 'stroke-width': 3.5, 'stroke-linejoin': 'round', 'paint-order': 'stroke' };
+const haloLabel = (svg, x, y, s, a) => label(svg, x, y, s, Object.assign({}, HALO, a));
+function axisTitles(svg, xTitle, yTitle, xMid, yMid, H) {
+  label(svg, xMid, H - 8, xTitle, { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600, fill: COL.ink });
+  label(svg, 14, yMid, yTitle, { 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 600, fill: COL.ink,
+                                transform: `rotate(-90 14 ${yMid})` });
+}
+
+// Marker shapes: identity is carried by shape and label, not colour alone
+function shapeEl(shape, x, y, r, attrs) {
+  if (shape === 'circle') return el('circle', Object.assign({ cx: x, cy: y, r }, attrs));
+  let pts;
+  if (shape === 'square') { const s = r * 0.9; pts = [[x - s, y - s], [x + s, y - s], [x + s, y + s], [x - s, y + s]]; }
+  else if (shape === 'triangle') { pts = [[x, y - r * 1.2], [x + r * 1.15, y + r * 0.85], [x - r * 1.15, y + r * 0.85]]; }
+  else if (shape === 'diamond') { const s = r * 1.25; pts = [[x, y - s], [x + s, y], [x, y + s], [x - s, y]]; }
+  else { pts = []; for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + k * 2 * Math.PI / 5; pts.push([x + r * 1.15 * Math.cos(a), y + r * 1.15 * Math.sin(a)]); } }
+  return el('polygon', Object.assign({ points: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') }, attrs));
+}
+// Line-and-marker key for a sample, as an HTML string
+function sampleIcon(s) {
+  const svg = el('svg', { width: 30, height: 16, viewBox: '0 0 30 16', 'aria-hidden': 'true', focusable: 'false' });
+  const line = { x1: 1, y1: 8, x2: 29, y2: 8, stroke: s.color, 'stroke-width': 2.5 };
+  if (s.dash) line['stroke-dasharray'] = '5 3';
+  svg.appendChild(el('line', line));
+  svg.appendChild(shapeEl(s.shape, 15, 8, 4.5, { fill: s.color, stroke: COL.surf, 'stroke-width': 1.5 }));
+  return svg.outerHTML;
+}
+
+// Blend two hex colours; w is the weight of a
+function mixHex(a, b, w) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  return 'rgb(' + A.map((v, i) => Math.round(v * w + B[i] * (1 - w))).join(',') + ')';
+}
+
+/* ===========================================================================
+   AMPLIFICATION PLOT (SVG)
+   =========================================================================== */
+const AMP = { W: 400, H: 280, pad: { top: 14, right: 14, bottom: 42, left: 52 } };
+
+function drawAmpChart() {
+  const svg = document.getElementById('ampPlot');
+  svg.innerHTML = '';
+  const { W, H, pad } = AMP;
+  const plotL = pad.left, plotR = W - pad.right, plotT = pad.top, plotB = H - pad.bottom;
+  const plotW = plotR - plotL, plotH = plotB - plotT;
 
   // Y-axis range
   let yMin, yMax, yToScreen, yTickVals, yTickLabels;
-
   if (yAxisScale === 'log') {
     yMin = -4; // 10^-4
     yMax = 0.1; // slightly above 10^0
@@ -845,202 +590,98 @@ function drawAmpChart() {
     yTickVals = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
     yTickLabels = ['0', '0.2', '0.4', '0.6', '0.8', '1.0'];
   }
-
   const xToScreen = (cycle) => plotL + (cycle / TOTAL_CYCLES) * plotW;
+  const clampY = y => Math.max(plotT, Math.min(plotB, y));
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(42, 58, 82, 0.4)';
-  ctx.lineWidth = 0.5;
+  // Grid
   yTickVals.forEach(v => {
     const y = yToScreen(v);
-    if (y >= plotT && y <= plotB) {
-      ctx.beginPath();
-      ctx.moveTo(plotL, y);
-      ctx.lineTo(plotR, y);
-      ctx.stroke();
-    }
+    if (y >= plotT && y <= plotB) add(svg, 'line', { x1: plotL, y1: y, x2: plotR, y2: y, stroke: COL.grid, 'stroke-width': 1 });
   });
   for (let c = 0; c <= TOTAL_CYCLES; c += 5) {
     const x = xToScreen(c);
-    ctx.beginPath();
-    ctx.moveTo(x, plotT);
-    ctx.lineTo(x, plotB);
-    ctx.stroke();
+    add(svg, 'line', { x1: x, y1: plotT, x2: x, y2: plotB, stroke: COL.grid, 'stroke-width': 1 });
   }
 
-  // Axes
-  ctx.strokeStyle = 'rgba(42, 58, 82, 0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(plotL, plotT);
-  ctx.lineTo(plotL, plotB);
-  ctx.lineTo(plotR, plotB);
-  ctx.stroke();
-
-  // Tick labels
-  ctx.font = '13px "JetBrains Mono"';
-  ctx.fillStyle = '#8494ad';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
+  // Axes, ticks and titles
+  add(svg, 'path', { d: `M${plotL} ${plotT}V${plotB}H${plotR}`, fill: 'none', stroke: COL.inkMuted, 'stroke-width': 1.5 });
   yTickVals.forEach((v, i) => {
     const y = yToScreen(v);
-    if (y >= plotT - 5 && y <= plotB + 5) {
-      ctx.fillText(yTickLabels[i], plotL - 8, y);
-    }
+    if (y >= plotT - 5 && y <= plotB + 5) label(svg, plotL - 7, y + 4, yTickLabels[i], { 'text-anchor': 'end' });
   });
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (let c = 0; c <= TOTAL_CYCLES; c += 5) {
-    ctx.fillText(c.toString(), xToScreen(c), plotB + 8);
-  }
-
-  // Axis labels
-  ctx.font = '14px "IBM Plex Sans"';
-  ctx.fillStyle = '#b0bdd0';
-  ctx.textAlign = 'center';
-  ctx.fillText('Cycle Number', (plotL + plotR) / 2, plotB + 34);
-
-  ctx.save();
-  ctx.translate(16, (plotT + plotB) / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
-  ctx.fillText(yAxisScale === 'log' ? 'Fluorescence (log₁₀ ΔRn)' : 'Fluorescence (ΔRn, normalised)', 0, 0);
-  ctx.restore();
+  for (let c = 0; c <= TOTAL_CYCLES; c += 5) label(svg, xToScreen(c), plotB + 16, String(c), { 'text-anchor': 'middle' });
+  axisTitles(svg, 'Cycle number',
+             yAxisScale === 'log' ? 'Fluorescence (log₁₀ ΔRn)' : 'Fluorescence (ΔRn, normalised)',
+             (plotL + plotR) / 2, (plotT + plotB) / 2, H);
 
   // Threshold line
   const threshY = yToScreen(threshold);
   if (threshY >= plotT && threshY <= plotB) {
-    ctx.strokeStyle = 'rgba(255, 90, 90, 0.7)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(plotL, threshY);
-    ctx.lineTo(plotR, threshY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.font = '13px "JetBrains Mono"';
-    ctx.fillStyle = '#ff5a5a';
-    ctx.textAlign = 'left';
-    ctx.fillText('Threshold', plotR - 70, threshY - 8);
+    add(svg, 'line', { x1: plotL, y1: threshY, x2: plotR, y2: threshY, stroke: COL.ink, 'stroke-width': 1.5, 'stroke-dasharray': '6 4' });
+    // below the line at the right, where every curve has already risen past it
+    haloLabel(svg, plotR - 4, threshY + 14, 'Threshold', { 'text-anchor': 'end', fill: COL.ink, 'font-weight': 600 });
   }
 
   // Current cycle indicator
   if (currentCycle > 0 && currentCycle <= TOTAL_CYCLES) {
     const cx = xToScreen(currentCycle);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(cx, plotT);
-    ctx.lineTo(cx, plotB);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    add(svg, 'line', { x1: cx, y1: plotT, x2: cx, y2: plotB, stroke: COL.s3, 'stroke-width': 1, 'stroke-dasharray': '3 3' });
   }
 
-  // Fluorescence curves (draw up to currentCycle)
+  // Fluorescence curves, drawn up to currentCycle
   SAMPLES.forEach((sample, idx) => {
     if (!sampleVisibility[idx]) return;
     const curve = fluorescenceCurves[idx];
-    ctx.strokeStyle = sample.color;
-    ctx.lineWidth = 2.2;
-    ctx.beginPath();
-    let started = false;
+    let d = '';
     for (let c = 0; c <= Math.min(currentCycle, TOTAL_CYCLES); c++) {
-      const x = xToScreen(c);
-      const y = yToScreen(curve[c]);
-      const yc = Math.max(plotT, Math.min(plotB, y));
-      if (!started) { ctx.moveTo(x, yc); started = true; }
-      else ctx.lineTo(x, yc);
+      d += (c ? 'L' : 'M') + xToScreen(c).toFixed(1) + ' ' + clampY(yToScreen(curve[c])).toFixed(1);
     }
-    ctx.stroke();
+    const a = { d, fill: 'none', stroke: sample.color, 'stroke-width': 2.5, 'stroke-linejoin': 'round' };
+    if (sample.dash) a['stroke-dasharray'] = sample.dash;
+    add(svg, 'path', a);
+  });
 
-    // Dot at current cycle
-    if (currentCycle > 0 && currentCycle <= TOTAL_CYCLES) {
-      const x = xToScreen(currentCycle);
-      const y = yToScreen(curve[currentCycle]);
-      const yc = Math.max(plotT, Math.min(plotB, y));
-      ctx.fillStyle = sample.color;
-      ctx.beginPath();
-      ctx.arc(x, yc, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Ct marker
+  // Ct markers: drop line, open marker and a direct label
+  SAMPLES.forEach((sample, idx) => {
+    if (!sampleVisibility[idx]) return;
     const ct = computeCt(idx, threshold);
     if (ct !== null && ct <= currentCycle) {
       const cx = xToScreen(ct);
-      const cy = yToScreen(threshold);
-      const cyc = Math.max(plotT, Math.min(plotB, cy));
-      // Drop line
-      ctx.strokeStyle = sample.color + '55';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 3]);
-      ctx.beginPath();
-      ctx.moveTo(cx, cyc);
-      ctx.lineTo(cx, plotB);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Diamond marker
-      ctx.fillStyle = sample.color;
-      ctx.beginPath();
-      ctx.moveTo(cx, cyc - 5);
-      ctx.lineTo(cx + 5, cyc);
-      ctx.lineTo(cx, cyc + 5);
-      ctx.lineTo(cx - 5, cyc);
-      ctx.closePath();
-      ctx.fill();
+      const cyc = clampY(yToScreen(threshold));
+      add(svg, 'line', { x1: cx, y1: cyc, x2: cx, y2: plotB, stroke: sample.color, 'stroke-width': 1.2, 'stroke-dasharray': '2 3' });
+      svg.appendChild(shapeEl(sample.shape, cx, cyc, 4.5, { fill: COL.surf, stroke: sample.color, 'stroke-width': 2 }));
+      haloLabel(svg, cx - 7, cyc - 7, sample.short, { 'text-anchor': 'end', fill: COL.ink, 'font-weight': 700 });
     }
   });
+
+  // Filled marker at the current cycle
+  if (currentCycle > 0 && currentCycle <= TOTAL_CYCLES) {
+    SAMPLES.forEach((sample, idx) => {
+      if (!sampleVisibility[idx]) return;
+      const y = clampY(yToScreen(fluorescenceCurves[idx][currentCycle]));
+      svg.appendChild(shapeEl(sample.shape, xToScreen(currentCycle), y, 4.5, { fill: sample.color, stroke: COL.surf, 'stroke-width': 1.5 }));
+    });
+  }
 }
 
-// ============================================================
-// STANDARD CURVE CHART
-// ============================================================
-
-const stdCanvas = document.getElementById('stdCurveChart');
-const stdCtx = stdCanvas.getContext('2d');
+/* ===========================================================================
+   STANDARD CURVE (SVG)
+   =========================================================================== */
+const STD = { W: 400, H: 250, pad: { top: 16, right: 16, bottom: 44, left: 52 } };
 
 function drawStdCurve() {
-  const { w, h } = resizeCanvas(stdCanvas);
-  const ctx = stdCtx;
-  ctx.clearRect(0, 0, w, h);
-
-  const pad = { top: 24, right: 24, bottom: 44, left: 56 };
-  const pL = pad.left, pR = w - pad.right, pT = pad.top, pB = h - pad.bottom;
+  const svg = document.getElementById('stdPlot');
+  svg.innerHTML = '';
+  const { W, H, pad } = STD;
+  const pL = pad.left, pR = W - pad.right, pT = pad.top, pB = H - pad.bottom;
   const pW = pR - pL, pH = pB - pT;
 
-  // Compute Ct values
-  const ctVals = SAMPLES.map((s, i) => ({
-    logConc: Math.log10(s.initCopies),
-    ct: computeCt(i, threshold),
-    color: s.color,
-    visible: sampleVisibility[i]
-  })).filter(d => d.ct !== null);
-
-  // Linear regression
-  let slope = 0, intercept = 0, r2 = 0;
-  const visibleCts = ctVals.filter(d => d.visible);
-  if (visibleCts.length >= 2) {
-    const n = visibleCts.length;
-    const sumX = visibleCts.reduce((a, d) => a + d.logConc, 0);
-    const sumY = visibleCts.reduce((a, d) => a + d.ct, 0);
-    const sumXY = visibleCts.reduce((a, d) => a + d.logConc * d.ct, 0);
-    const sumX2 = visibleCts.reduce((a, d) => a + d.logConc * d.logConc, 0);
-    slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-    intercept = (sumY - slope * sumX) / n;
-    const meanY = sumY / n;
-    const ssTot = visibleCts.reduce((a, d) => a + (d.ct - meanY) ** 2, 0);
-    const ssRes = visibleCts.reduce((a, d) => a + (d.ct - (slope * d.logConc + intercept)) ** 2, 0);
-    r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
-  }
+  const { ctVals, visibleCts, slope, intercept, r2, eff } = fitStandardCurve();
 
   // Update stats
-  document.getElementById('statSlope').textContent = slope ? slope.toFixed(2) : '—';
-  document.getElementById('statR2').textContent = r2 ? r2.toFixed(4) : '—';
-  const eff = slope ? (Math.pow(10, -1 / slope) - 1) * 100 : 0;
-  document.getElementById('statEff').textContent = eff ? eff.toFixed(1) + '%' : '—';
+  setText('statSlope', slope ? slope.toFixed(2) : '—');
+  setText('statR2', r2 ? r2.toFixed(4) : '—');
+  setText('statEff', eff ? eff.toFixed(1) + '%' : '—');
 
   // Axis ranges
   const xMin = 1.5, xMax = 6.5; // log10 copies
@@ -1054,117 +695,46 @@ function drawStdCurve() {
   const yToS = v => pB - ((v - yMin) / (yMax - yMin)) * pH;
 
   // Grid
-  ctx.strokeStyle = 'rgba(42, 58, 82, 0.4)';
-  ctx.lineWidth = 0.5;
-  for (let y = yMin; y <= yMax; y += 5) {
-    ctx.beginPath(); ctx.moveTo(pL, yToS(y)); ctx.lineTo(pR, yToS(y)); ctx.stroke();
-  }
-  for (let x = 2; x <= 6; x++) {
-    ctx.beginPath(); ctx.moveTo(xToS(x), pT); ctx.lineTo(xToS(x), pB); ctx.stroke();
-  }
+  for (let y = yMin; y <= yMax; y += 5) add(svg, 'line', { x1: pL, y1: yToS(y), x2: pR, y2: yToS(y), stroke: COL.grid, 'stroke-width': 1 });
+  for (let x = 2; x <= 6; x++) add(svg, 'line', { x1: xToS(x), y1: pT, x2: xToS(x), y2: pB, stroke: COL.grid, 'stroke-width': 1 });
 
-  // Axes
-  ctx.strokeStyle = 'rgba(42, 58, 82, 0.8)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(pL, pT); ctx.lineTo(pL, pB); ctx.lineTo(pR, pB);
-  ctx.stroke();
+  // Axes, ticks and titles
+  add(svg, 'path', { d: `M${pL} ${pT}V${pB}H${pR}`, fill: 'none', stroke: COL.inkMuted, 'stroke-width': 1.5 });
+  for (let x = 2; x <= 6; x++) label(svg, xToS(x), pB + 16, '10' + superscript(x), { 'text-anchor': 'middle' });
+  for (let y = yMin; y <= yMax; y += 5) label(svg, pL - 7, yToS(y) + 4, String(y), { 'text-anchor': 'end' });
+  axisTitles(svg, 'Starting copy number (log₁₀ scale)', 'Ct value', (pL + pR) / 2, (pT + pB) / 2, H);
 
-  // Labels
-  ctx.font = '12px "JetBrains Mono"';
-  ctx.fillStyle = '#8494ad';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (let x = 2; x <= 6; x++) {
-    ctx.fillText('10' + superscript(x), xToS(x), pB + 6);
-  }
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  for (let y = yMin; y <= yMax; y += 5) {
-    ctx.fillText(y.toString(), pL - 6, yToS(y));
-  }
-
-  // Axis labels
-  ctx.font = '13px "IBM Plex Sans"';
-  ctx.fillStyle = '#b0bdd0';
-  ctx.textAlign = 'center';
-  ctx.fillText('Initial Copy Number (log₁₀)', (pL + pR) / 2, pB + 28);
-  ctx.save();
-  ctx.translate(12, (pT + pB) / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Ct Value', 0, 0);
-  ctx.restore();
-
-  // Regression line
+  // Regression line, clipped to the plot area
   if (visibleCts.length >= 2) {
-    ctx.strokeStyle = 'rgba(255, 140, 66, 0.6)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([6, 4]);
-    const x1 = xMin, x2 = xMax;
-    ctx.beginPath();
-    ctx.moveTo(xToS(x1), yToS(slope * x1 + intercept));
-    ctx.lineTo(xToS(x2), yToS(slope * x2 + intercept));
-    ctx.stroke();
-    ctx.setLineDash([]);
+    const clip = add(svg, 'clipPath', { id: 'stdClip' });
+    clip.appendChild(el('rect', { x: pL, y: pT, width: pW, height: pH }));
+    add(svg, 'line', {
+      x1: xToS(xMin), y1: yToS(slope * xMin + intercept),
+      x2: xToS(xMax), y2: yToS(slope * xMax + intercept),
+      stroke: COL.inkMuted, 'stroke-width': 2, 'stroke-dasharray': '6 4', 'clip-path': 'url(#stdClip)'
+    });
   }
 
   // Data points
   ctVals.forEach(d => {
     if (!d.visible) return;
-    const x = xToS(d.logConc);
-    const y = yToS(d.ct);
-    ctx.fillStyle = d.color;
-    ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    const x = xToS(d.logConc), y = yToS(d.ct);
+    svg.appendChild(shapeEl(d.sample.shape, x, y, 5.5, { fill: d.sample.color, stroke: COL.surf, 'stroke-width': 1.5 }));
+    haloLabel(svg, x + 8, y - 7, d.sample.short, { fill: COL.ink, 'font-weight': 700 });
   });
+
+  updateStdAlt(visibleCts, slope, r2, eff);
 }
 
-function superscript(n) {
-  const sup = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶' };
-  return String(n).split('').map(c => sup[c] || c).join('');
-}
-
-// ============================================================
-// DNA VISUALISATION — MOLECULE VIEW + BAR CHART
-// ============================================================
-
+/* ===========================================================================
+   TEMPLATE DNA — MOLECULE VIEW (canvas) + COPY NUMBER BARS (SVG)
+   =========================================================================== */
 const dnaCanvas = document.getElementById('dnaCanvas');
 const dnaCtx = dnaCanvas.getContext('2d');
-const dnaBarCanvas = document.getElementById('dnaBarChart');
-const dnaBarCtx = dnaBarCanvas.getContext('2d');
+const DNA_W = 440, DNA_H = 240;          // drawing units; the canvas holds 2× pixels for sharp lines
+dnaCtx.setTransform(dnaCanvas.width / DNA_W, 0, 0, dnaCanvas.height / DNA_H, 0, 0);
 
-// Pre-compute copy numbers per cycle for Sample 1 (used in vis)
-function getCopiesAtCycle(cycle) {
-  const raw = SAMPLES[0].initCopies * Math.pow(1 + PCR_EFFICIENCY, cycle);
-  // Apply same logistic plateau as fluorescence model
-  return PLATEAU_COPIES * raw / (PLATEAU_COPIES + raw);
-}
-
-// Map the real copy count to a displayable molecule count (0..MAX_MOLECULES)
-// We use a log mapping so early doublings are clearly visible:
-// cycle 0 → ~1 molecule shown, each doubling adds visible molecules,
-// and the panel fills to MAX at high cycle numbers.
-const MAX_MOLECULES = 120;
-
-function getMoleculeDisplayCount(cycle) {
-  if (cycle <= 0) return 0;
-  const copies = getCopiesAtCycle(cycle);
-  const copiesAtZero = getCopiesAtCycle(0);
-  const copiesAtMax = getCopiesAtCycle(TOTAL_CYCLES);
-  // Log-scale mapping so early doublings are prominent
-  const logMin = Math.log10(Math.max(copiesAtZero, 1));
-  const logMax = Math.log10(copiesAtMax);
-  const logCur = Math.log10(Math.max(copies, 1));
-  const frac = Math.max(0, Math.min(1, (logCur - logMin) / (logMax - logMin)));
-  return Math.max(1, Math.round(frac * MAX_MOLECULES));
-}
-
-// Pre-generate stable grid positions for molecules.
-// Uses a tidy grid layout so the doubling is visually countable.
+// Stable grid positions for molecules, so the doubling is visually countable
 let cachedPositions = null;
 let cachedW = 0, cachedH = 0;
 
@@ -1205,108 +775,80 @@ function getMoleculePositions(w, h) {
   return positions;
 }
 
+// One dsDNA molecule: two strands (blue and dark), base-pair rungs, and
+// SYBR Green shown as small rust squares sitting in the double helix
+function drawDsDNA(ctx, mx, my) {
+  const halfH = 10, gap = 8;
+  ctx.strokeStyle = COL.s3; ctx.lineWidth = 1.2;
+  for (const r of [-6, 0, 6]) {
+    ctx.beginPath(); ctx.moveTo(mx - gap / 2, my + r); ctx.lineTo(mx + gap / 2, my + r); ctx.stroke();
+  }
+  ctx.fillStyle = COL.s2;
+  for (const r of [-3, 3]) ctx.fillRect(mx - 2, my + r - 2, 4, 4);
+  ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+  ctx.strokeStyle = COL.s1;
+  ctx.beginPath(); ctx.moveTo(mx - gap / 2, my - halfH); ctx.lineTo(mx - gap / 2, my + halfH); ctx.stroke();
+  ctx.strokeStyle = COL.ink;
+  ctx.beginPath(); ctx.moveTo(mx + gap / 2, my - halfH); ctx.lineTo(mx + gap / 2, my + halfH); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
 function drawDnaVis() {
-  // === Molecule Panel ===
-  const { w, h } = resizeCanvas(dnaCanvas);
-  const ctx = dnaCtx;
+  const w = DNA_W, h = DNA_H, ctx = dnaCtx;
   ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = COL.surf;
+  ctx.fillRect(0, 0, w, h);
 
   const copies = currentCycle > 0 ? getCopiesAtCycle(currentCycle) : SAMPLES[0].initCopies;
   const copyInt = Math.round(copies);
   const showCount = currentCycle > 0 ? getMoleculeDisplayCount(currentCycle) : 0;
 
-  document.getElementById('dnaCycleLabel').textContent = currentCycle;
-  document.getElementById('dnaCount').textContent = copyInt > 1e6 ? copies.toExponential(2) : copyInt.toLocaleString();
+  setText('dnaCycleLabel', currentCycle);
+  setText('dnaCount', fmtCopies(copies, 2));
 
-  // Show overflow indicator when capped
+  // Say so when the panel is full but the real count keeps rising
   const overflowEl = document.getElementById('dnaOverflow');
-  const overflowTextEl = document.getElementById('dnaOverflowText');
   if (showCount >= MAX_MOLECULES && copyInt > MAX_MOLECULES) {
-    overflowEl.style.display = 'block';
-    overflowTextEl.textContent = `Panel full — actual count: ${copyInt > 1e6 ? copies.toExponential(1) : copyInt.toLocaleString()} copies`;
-  } else if (showCount > 0) {
-    overflowEl.style.display = 'none';
+    overflowEl.hidden = false;
+    setText('dnaOverflow', `Panel full. The actual count is ${fmtCopies(copies, 1)} copies.`);
   } else {
-    overflowEl.style.display = 'none';
+    overflowEl.hidden = true;
   }
 
-  // Get grid positions
   const positions = getMoleculePositions(w, h);
 
-  // Draw empty grid slots (faint placeholders) so students see the space filling
-  for (let i = 0; i < MAX_MOLECULES; i++) {
-    const pos = positions[i];
-    ctx.fillStyle = 'rgba(42, 58, 82, 0.15)';
+  // Empty grid slots, so students see the space filling
+  ctx.fillStyle = COL.border;
+  for (let i = showCount; i < MAX_MOLECULES; i++) {
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 2, 0, Math.PI * 2);
+    ctx.arc(positions[i].x, positions[i].y, 2, 0, Math.PI * 2);
     ctx.fill();
   }
-
-  // Draw actual molecules — only up to showCount
-  for (let i = 0; i < showCount; i++) {
-    const pos = positions[i];
-    const mx = pos.x;
-    const my = pos.y;
-
-    // SYBR Green glow behind the dsDNA
-    ctx.fillStyle = 'rgba(57, 217, 138, 0.18)';
-    ctx.beginPath();
-    ctx.arc(mx, my, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Two strands (sense + antisense)
-    const halfH = 5;
-    const gap = 2.5;
-
-    ctx.strokeStyle = '#4da6ff';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(mx - gap / 2, my - halfH);
-    ctx.lineTo(mx - gap / 2, my + halfH);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#39d98a';
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(mx + gap / 2, my - halfH);
-    ctx.lineTo(mx + gap / 2, my + halfH);
-    ctx.stroke();
-
-    // Base-pair rungs
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 0.7;
-    for (let r = -3; r <= 3; r += 3) {
-      ctx.beginPath();
-      ctx.moveTo(mx - gap / 2, my + r);
-      ctx.lineTo(mx + gap / 2, my + r);
-      ctx.stroke();
-    }
-  }
+  for (let i = 0; i < showCount; i++) drawDsDNA(ctx, positions[i].x, positions[i].y);
 
   // Cycle 0 state
   if (currentCycle === 0 || showCount === 0) {
-    ctx.fillStyle = '#8494ad';
-    ctx.font = '14px "IBM Plex Sans"';
+    ctx.fillStyle = COL.inkMuted;
+    ctx.font = '15px ' + getComputedStyle(document.body).fontFamily;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('Move the cycle slider to begin', w / 2, h / 2);
   }
 
-  // === Bar Chart Panel ===
   drawDnaBarChart();
+  updateDnaAlt(copies, showCount);
 }
 
-function drawDnaBarChart() {
-  const { w, h } = resizeCanvas(dnaBarCanvas);
-  const ctx = dnaBarCtx;
-  ctx.clearRect(0, 0, w, h);
+const BAR = { W: 400, H: 210, pad: { top: 30, right: 12, bottom: 38, left: 48 } };
 
-  const pad = { top: 16, right: 16, bottom: 32, left: 48 };
-  const pL = pad.left, pR = w - pad.right, pT = pad.top, pB = h - pad.bottom;
+function drawDnaBarChart() {
+  const svg = document.getElementById('barPlot');
+  svg.innerHTML = '';
+  const { W, H, pad } = BAR;
+  const pL = pad.left, pR = W - pad.right, pT = pad.top, pB = H - pad.bottom;
   const plotW = pR - pL, plotH = pB - pT;
 
-  // Y-axis: log10 of copy number
-  // Compute max log value across all cycles for Sample 1
+  // Y-axis: log10 of copy number for Sample 1
   const logCopies = [];
   for (let c = 0; c <= TOTAL_CYCLES; c++) {
     logCopies.push(Math.log10(Math.max(getCopiesAtCycle(c), 1)));
@@ -1316,177 +858,156 @@ function drawDnaBarChart() {
 
   const yToS = v => pB - ((v - yMin) / (yMax - yMin)) * plotH;
   const barW = plotW / TOTAL_CYCLES;
+  const barX = c => pL + ((c - 1) / TOTAL_CYCLES) * plotW;     // left edge of the bar for cycle c
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(42, 58, 82, 0.35)';
-  ctx.lineWidth = 0.5;
+  // Grid and y-axis labels
   for (let y = yMin; y <= yMax; y += 2) {
-    const sy = yToS(y);
-    ctx.beginPath();
-    ctx.moveTo(pL, sy);
-    ctx.lineTo(pR, sy);
-    ctx.stroke();
+    add(svg, 'line', { x1: pL, y1: yToS(y), x2: pR, y2: yToS(y), stroke: COL.grid, 'stroke-width': 1 });
+    label(svg, pL - 6, yToS(y) + 4, '10' + superscript(y), { 'text-anchor': 'end', 'font-size': 10 });
   }
-
-  // Y-axis labels
-  ctx.font = '11px "JetBrains Mono"';
-  ctx.fillStyle = '#8494ad';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  for (let y = yMin; y <= yMax; y += 2) {
-    ctx.fillText('10' + superscript(y), pL - 4, yToS(y));
-  }
-
-  // X-axis labels (every 10 cycles)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  for (let c = 0; c <= TOTAL_CYCLES; c += 10) {
-    const x = pL + (c / TOTAL_CYCLES) * plotW + barW / 2;
-    ctx.fillText(c.toString(), x, pB + 4);
-  }
-
-  // Axis label
-  ctx.font = '12px "IBM Plex Sans"';
-  ctx.fillStyle = '#b0bdd0';
-  ctx.textAlign = 'center';
-  ctx.fillText('Cycle', (pL + pR) / 2, pB + 18);
-
-  // Y label
-  ctx.save();
-  ctx.translate(10, (pT + pB) / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText('Copies (log₁₀)', 0, 0);
-  ctx.restore();
+  // X-axis labels, centred under their bars
+  [1, 10, 20, 30, 40].forEach(c => label(svg, barX(c) + barW / 2, pB + 15, String(c), { 'text-anchor': 'middle', 'font-size': 10 }));
+  axisTitles(svg, 'Cycle', 'Copies (log₁₀)', (pL + pR) / 2, (pT + pB) / 2, H);
 
   // Bars
   for (let c = 1; c <= TOTAL_CYCLES; c++) {
-    const logVal = logCopies[c];
-    const barH = ((logVal - yMin) / (yMax - yMin)) * plotH;
-    const x = pL + ((c - 1) / TOTAL_CYCLES) * plotW;
-    const y = pB - barH;
-
-    // Colour: green intensity proportional to fluorescence (SYBR signal)
-    const fluorFrac = fluorescenceCurves[0][c]; // normalised 0..1
-    const isFuture = c > currentCycle;
-
-    if (isFuture) {
-      // Future cycles: dim outline only
-      ctx.fillStyle = 'rgba(42, 58, 82, 0.25)';
-      ctx.fillRect(x + 1, y, Math.max(barW - 2, 1), barH);
+    const barH = ((logCopies[c] - yMin) / (yMax - yMin)) * plotH;
+    const x = barX(c), y = pB - barH;
+    const fluorFrac = fluorescenceCurves[0][c]; // normalised 0..1 SYBR signal
+    if (c > currentCycle) {
+      // Future cycles: outline only
+      add(svg, 'rect', { x: x + 1, y, width: Math.max(barW - 2, 1), height: barH, fill: COL.surf, stroke: COL.border, 'stroke-width': 1 });
     } else {
-      // Past / current cycles: SYBR green intensity
-      const r = Math.round(30 + (57 - 30) * fluorFrac);
-      const g = Math.round(80 + (217 - 80) * fluorFrac);
-      const b = Math.round(60 + (138 - 60) * fluorFrac);
-      const alpha = 0.5 + 0.5 * fluorFrac;
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      ctx.fillRect(x + 1, y, Math.max(barW - 2, 1), barH);
-
-      // Highlight current cycle
+      // Past / current cycles: shade darkens with SYBR fluorescence
+      add(svg, 'rect', { x: x + 1, y, width: Math.max(barW - 2, 1), height: barH,
+                         fill: mixHex(COL.s1, '#ffffff', 0.25 + 0.75 * fluorFrac), stroke: COL.s1, 'stroke-width': 1 });
       if (c === currentCycle) {
-        ctx.strokeStyle = '#39d98a';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x + 0.5, y - 0.5, Math.max(barW - 1, 2), barH + 1);
+        add(svg, 'rect', { x: x + 0.5, y: y - 0.5, width: Math.max(barW - 1, 2), height: barH + 1, fill: 'none', stroke: COL.ink, 'stroke-width': 2 });
       }
     }
   }
+  add(svg, 'path', { d: `M${pL} ${pT}V${pB}H${pR}`, fill: 'none', stroke: COL.inkMuted, 'stroke-width': 1.5 });
 
-  // Doubling annotation: show arrow between previous and current bar
+  // Doubling annotation: bracket between the previous and current bar
   if (currentCycle >= 2 && currentCycle <= 25) {
-    const prevLog = logCopies[currentCycle - 1];
-    const currLog = logCopies[currentCycle];
-    const diff = currLog - prevLog;
-
-    const prevX = pL + ((currentCycle - 2) / TOTAL_CYCLES) * plotW + barW / 2;
-    const currX = pL + ((currentCycle - 1) / TOTAL_CYCLES) * plotW + barW / 2;
-    const prevY = yToS(prevLog);
-    const currY = yToS(currLog);
-
-    // Small bracket showing the increase
-    const midX = (prevX + currX) / 2;
+    const prevX = barX(currentCycle - 1) + barW / 2;
+    const currX = barX(currentCycle) + barW / 2;
+    const prevY = yToS(logCopies[currentCycle - 1]);
+    const currY = yToS(logCopies[currentCycle]);
     const topY = Math.min(prevY, currY) - 12;
-
-    ctx.strokeStyle = 'rgba(255, 210, 63, 0.6)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(prevX, prevY - 2);
-    ctx.lineTo(prevX, topY);
-    ctx.lineTo(currX, topY);
-    ctx.lineTo(currX, currY - 2);
-    ctx.stroke();
-
-    // Arrow head
-    ctx.fillStyle = 'rgba(255, 210, 63, 0.6)';
-    ctx.beginPath();
-    ctx.moveTo(currX - 3, currY - 6);
-    ctx.lineTo(currX + 3, currY - 6);
-    ctx.lineTo(currX, currY - 2);
-    ctx.closePath();
-    ctx.fill();
-
-    // Label
-    ctx.font = '11px "JetBrains Mono"';
-    ctx.fillStyle = '#ffd23f';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('×1.95', midX, topY - 2);
+    add(svg, 'path', { d: `M${prevX} ${prevY - 2}V${topY}H${currX}V${currY - 2}`, fill: 'none', stroke: COL.s2, 'stroke-width': 1.5 });
+    add(svg, 'path', { d: `M${currX - 3} ${currY - 7}L${currX + 3} ${currY - 7}L${currX} ${currY - 2}Z`, fill: COL.s2 });
+    label(svg, (prevX + currX) / 2, topY - 4, '×1.95', { 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 700, fill: COL.s2 });
   }
 
-  // Plateau annotation
+  // Plateau annotation, above the bars
   if (currentCycle >= 30) {
     const plateauStartCycle = 28;
-    const plateauX = pL + ((plateauStartCycle - 1) / TOTAL_CYCLES) * plotW;
-    ctx.fillStyle = 'rgba(255, 140, 66, 0.7)';
-    ctx.font = '11px "IBM Plex Sans"';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('← Plateau (reagent depletion)', plateauX, pT + 2);
+    const px = barX(plateauStartCycle);
+    add(svg, 'path', { d: `M${px} ${pT - 3}V${pT - 8}H${pR}V${pT - 3}`, fill: 'none', stroke: COL.ink, 'stroke-width': 1.2 });
+    label(svg, pR, pT - 13, 'Plateau (reagent depletion)', { 'text-anchor': 'end', 'font-size': 10, 'font-weight': 600, fill: COL.ink });
   }
 }
 
-// ============================================================
-// SAMPLE LIST UI
-// ============================================================
+/* ===========================================================================
+   READOUTS — Ct table, live summary and text alternatives
+   =========================================================================== */
+const ctReached = i => { const ct = computeCt(i, threshold); return ct !== null && ct <= currentCycle; };
+let lastSummary = '';
 
-function buildSampleList() {
-  const container = document.getElementById('sampleList');
-  container.innerHTML = '';
+function updateSampleTable() {
+  let rows = '';
   SAMPLES.forEach((s, i) => {
     const ct = computeCt(i, threshold);
-    const ctStr = ct !== null && ct <= currentCycle ? 'Ct ' + ct.toFixed(1) : ct !== null ? 'Ct —' : 'N/A';
-    const div = document.createElement('div');
-    div.className = 'sample-item' + (sampleVisibility[i] ? '' : ' dimmed');
-    div.innerHTML = `
-      <div class="sample-dot" style="background: ${s.color};"></div>
-      <div class="sample-name">${s.name}</div>
-      <div class="sample-conc">${s.initCopies.toExponential(0)} copies</div>
-      <div class="sample-ct" style="color: ${ct !== null && ct <= currentCycle ? s.color : 'var(--text-muted)'};">${ctStr}</div>
-    `;
-    div.addEventListener('click', () => {
-      sampleVisibility[i] = !sampleVisibility[i];
-      updateAll();
-    });
-    container.appendChild(div);
+    const ctCell = ct !== null && ct <= currentCycle ? ct.toFixed(1)
+                 : ct !== null ? '<span aria-hidden="true">—</span><span class="vh">not reached yet</span>'
+                 : 'N/A';
+    rows += `<tr${sampleVisibility[i] ? '' : ' class="off"'}>` +
+            `<th scope="row"><span class="sample-cell">${sampleIcon(s)}${s.name}${sampleVisibility[i] ? '' : ' (hidden)'}</span></th>` +
+            `<td>${pow10(s.initCopies)}</td><td>${ctCell}</td></tr>`;
   });
+  document.getElementById('ctBody').innerHTML = rows;
+
+  // Live summary: changes only when a sample crosses (or un-crosses) the threshold
+  const crossed = SAMPLES.map((s, i) => i).filter(ctReached);
+  const html = crossed.length === 0
+    ? 'No sample has crossed the threshold yet.'
+    : `<strong>${crossed.length} of ${SAMPLES.length}</strong> samples have crossed the threshold: ` +
+      crossed.map(i => `${SAMPLES[i].name} (C<sub>t</sub> ${computeCt(i, threshold).toFixed(1)})`).join(', ') + '.';
+  if (html !== lastSummary) { document.getElementById('ctSummary').innerHTML = html; lastSummary = html; }
 }
 
-// ============================================================
-// CONTROLS
-// ============================================================
+function updateAmpAlt() {
+  const shown = SAMPLES.map((s, i) => i).filter(i => sampleVisibility[i]);
+  const crossed = shown.filter(ctReached);
+  const waiting = shown.filter(i => !ctReached(i));
+  let t = `Cycle ${currentCycle} of ${TOTAL_CYCLES}, ${yAxisScale === 'log' ? 'logarithmic' : 'linear'} fluorescence axis. `;
+  if (!shown.length) {
+    t += 'All samples are hidden. Tick a sample under Controls to show it.';
+  } else {
+    t += 'Each curve stays flat at the background level, rises steeply once enough product has built up, ' +
+         'then levels off at the plateau. The more dilute the sample, the later its curve rises. ';
+    t += crossed.length
+      ? 'Crossed the threshold so far: ' + crossed.map(i => `${SAMPLES[i].name} at Ct ${computeCt(i, threshold).toFixed(1)}`).join('; ') + '. '
+      : 'No shown sample has crossed the threshold yet. ';
+    if (waiting.length) t += 'Not yet crossed: ' + waiting.map(i => SAMPLES[i].name).join(', ') + '.';
+  }
+  setText('ampAltText', t);
+
+  // Data table: every 5th cycle up to now, plus the current cycle
+  document.getElementById('ampAltHead').innerHTML =
+    '<tr><th scope="col">Cycle</th>' + shown.map(i => `<th scope="col">${SAMPLES[i].name}</th>`).join('') + '</tr>';
+  const cycles = [];
+  for (let c = 0; c <= currentCycle; c += 5) cycles.push(c);
+  if (currentCycle % 5 !== 0) cycles.push(currentCycle);
+  document.getElementById('ampAltBody').innerHTML = cycles.map(c =>
+    `<tr><th scope="row">${c}</th>` + shown.map(i => `<td>${fluorescenceCurves[i][c].toPrecision(3)}</td>`).join('') + '</tr>'
+  ).join('');
+}
+
+function updateStdAlt(visibleCts, slope, r2, eff) {
+  const box = document.getElementById('stdAlt');
+  if (visibleCts.length < 2) {
+    box.textContent = 'Show at least two samples to fit a standard curve.';
+    return;
+  }
+  box.textContent =
+    `The ${visibleCts.length} points fall on a straight line: Ct drops by about ${(-slope).toFixed(2)} cycles ` +
+    `for each 10-fold increase in starting copies (slope ${slope.toFixed(2)}, R² ${r2.toFixed(4)}), ` +
+    `giving a PCR efficiency of ${eff.toFixed(1)}%. Points: ` +
+    visibleCts.map(d => `${d.sample.name}, ${d.sample.initCopies.toLocaleString('en-AU')} copies, Ct ${d.ct.toFixed(1)}`).join('; ') + '.';
+}
+
+function updateDnaAlt(copies, showCount) {
+  const n = Math.round(copies);
+  const spoken = n > 1e6 ? sciSpoken(copies, 2) : n.toLocaleString('en-AU');
+  setText('dnaAlt',
+    `At cycle ${currentCycle}, sample 1 holds about ${spoken} copies of double-stranded template DNA, with SYBR Green bound. ` +
+    (showCount >= MAX_MOLECULES ? 'The molecule grid is full. '
+                                : `The molecule grid has ${showCount} of ${MAX_MOLECULES} slots filled. `) +
+    'The grid fills on a log scale, so each cycle of doubling adds about the same number of molecules. ' +
+    'The bar chart shows copy number on a log scale for every cycle: bars grow by a near-constant step ' +
+    'during the exponential phase, then level off at the plateau when reagents run out.');
+}
+
+/* ===========================================================================
+   CONTROLS
+   =========================================================================== */
+const cycleSlider = document.getElementById('cycleSlider');
+const playBtn = document.getElementById('playBtn');
+
+function syncChecked(groupId) {
+  document.querySelectorAll('#' + groupId + ' .radio').forEach(l => l.classList.toggle('checked', l.querySelector('input').checked));
+}
 
 function setScale(scale) {
   yAxisScale = scale;
-  document.querySelectorAll('.toggle-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.scale === scale);
-  });
   drawAmpChart();
+  updateAmpAlt();
 }
 
 function setSpeed(speed) {
   playSpeed = speed;
-  document.querySelectorAll('.speed-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.speed) === speed);
-  });
   if (isPlaying) {
     clearInterval(playInterval);
     startPlayback();
@@ -1499,7 +1020,7 @@ function togglePlay() {
   } else {
     if (currentCycle >= TOTAL_CYCLES) {
       currentCycle = 0;
-      document.getElementById('cycleSlider').value = 0;
+      cycleSlider.value = 0;
     }
     startPlayback();
   }
@@ -1507,8 +1028,8 @@ function togglePlay() {
 
 function startPlayback() {
   isPlaying = true;
-  document.getElementById('playLabel').textContent = 'Pause';
-  document.getElementById('playIcon').innerHTML = '<rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/>';
+  playBtn.textContent = 'Pause animation';
+  playBtn.setAttribute('aria-pressed', 'true');
 
   const baseDelay = 800;
   const stageDelay = baseDelay / (playSpeed * 3);
@@ -1525,7 +1046,7 @@ function startPlayback() {
         stopPlayback();
         return;
       }
-      document.getElementById('cycleSlider').value = currentCycle;
+      cycleSlider.value = currentCycle;
       updateAll();
     }
   }, stageDelay);
@@ -1534,46 +1055,107 @@ function startPlayback() {
 function stopPlayback() {
   isPlaying = false;
   clearInterval(playInterval);
-  document.getElementById('playLabel').textContent = 'Play';
-  document.getElementById('playIcon').innerHTML = '<polygon points="5,3 19,12 5,21"/>';
+  playBtn.textContent = 'Play animation';
+  playBtn.setAttribute('aria-pressed', 'false');
 }
 
 function updateStageHighlight() {
-  document.getElementById('stageDenature').classList.toggle('active', animStage === 0);
-  document.getElementById('stageAnneal').classList.toggle('active', animStage === 1);
-  document.getElementById('stageExtend').classList.toggle('active', animStage === 2);
+  ['stageDenature', 'stageAnneal', 'stageExtend'].forEach((id, k) => {
+    const li = document.getElementById(id);
+    if (animStage === k) li.setAttribute('aria-current', 'step');
+    else li.removeAttribute('aria-current');
+  });
 }
 
 function updateAll() {
-  document.getElementById('cycleDisplay').innerHTML = currentCycle + ' <span>/ 40</span>';
+  setText('cycleVal', currentCycle);
+  cycleSlider.setAttribute('aria-valuetext', `Cycle ${currentCycle} of ${TOTAL_CYCLES}`);
   drawAmpChart();
   drawStdCurve();
-  buildSampleList();
+  updateSampleTable();
   drawDnaVis();
+  updateAmpAlt();
 }
 
-// Slider events
-document.getElementById('cycleSlider').addEventListener('input', function () {
+// Slider: show the extension step by default when scrubbing
+cycleSlider.addEventListener('input', function () {
   currentCycle = parseInt(this.value);
-  animStage = 2; // Show extension by default when scrubbing
+  animStage = 2;
+  updateStageHighlight();
+  updateAll();
+});
+function stepCycle(delta) {
+  cycleSlider.value = Math.max(1, Math.min(TOTAL_CYCLES, +cycleSlider.value + delta));
+  currentCycle = parseInt(cycleSlider.value);
+  animStage = 2;
+  updateStageHighlight();
+  updateAll();
+  setText('cycleAnnounce', `Cycle ${currentCycle} of ${TOTAL_CYCLES}`);
+}
+document.getElementById('cycleUp').addEventListener('click', () => stepCycle(1));
+document.getElementById('cycleDown').addEventListener('click', () => stepCycle(-1));
+
+playBtn.addEventListener('click', togglePlay);
+
+document.getElementById('speedGroup').addEventListener('change', e => {
+  syncChecked('speedGroup');
+  setSpeed(parseInt(e.target.value));
+});
+document.getElementById('scaleGroup').addEventListener('change', e => {
+  syncChecked('scaleGroup');
+  setScale(e.target.value);
+});
+
+// Sample show/hide checkboxes, built from SAMPLES
+const sampleGroup = document.getElementById('sampleGroup');
+SAMPLES.forEach((s, i) => {
+  const lab = document.createElement('label');
+  lab.className = 'radio checked';
+  lab.innerHTML = `<input type="checkbox" value="${i}" checked>${sampleIcon(s)}` +
+                  `<span>${s.name}<small>${pow10(s.initCopies)} copies</small></span>`;
+  sampleGroup.appendChild(lab);
+});
+sampleGroup.addEventListener('change', e => {
+  sampleVisibility[+e.target.value] = e.target.checked;
+  syncChecked('sampleGroup');
+  updateAll();
+});
+
+// Amplification plot legend
+document.getElementById('ampLegend').innerHTML =
+  SAMPLES.map(s => `<span>${sampleIcon(s)}${s.short}, ${pow10(s.initCopies)} copies</span>`).join('') +
+  `<span><svg width="30" height="16" viewBox="0 0 30 16" aria-hidden="true"><line x1="1" y1="8" x2="29" y2="8" stroke="${COL.ink}" stroke-width="1.5" stroke-dasharray="6 4"/></svg>Threshold</span>`;
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  stopPlayback();
+  playSpeed = 1;
+  document.querySelector('#speedGroup input[value="1"]').checked = true;
+  yAxisScale = 'linear';
+  document.querySelector('#scaleGroup input[value="linear"]').checked = true;
+  sampleVisibility = SAMPLES.map(() => true);
+  sampleGroup.querySelectorAll('input').forEach(c => { c.checked = true; });
+  ['speedGroup', 'scaleGroup', 'sampleGroup'].forEach(syncChecked);
+  currentCycle = 1;
+  cycleSlider.value = 1;
+  animStage = 2;
   updateStageHighlight();
   updateAll();
 });
 
-// Resize handling
-window.addEventListener('resize', () => {
-  cachedPositions = null; // Invalidate molecule grid positions
-  updateAll();
-});
+// Nothing moves until the student presses Play; say so for reduced-motion users
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.getElementById('motionNote').textContent =
+    'Your system requests reduced motion, so the cycles only advance when you choose. ' +
+    'Press Play to run them, or step through with the slider or the plus and minus buttons.';
+}
 
-// ============================================================
-// INITIALISE
-// ============================================================
-
+/* ===========================================================================
+   INITIALISE
+   =========================================================================== */
 animStage = 2;
 updateStageHighlight();
 currentCycle = 1;
-document.getElementById('cycleSlider').value = 1;
+cycleSlider.value = 1;
 updateAll();
 </script>
 </body>
