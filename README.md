@@ -35,7 +35,7 @@ The tools are designed to be hosted on GitHub Pages and embedded in a learning m
 ## Using them
 
 - **Locally:** open any `.html` file in a modern browser.
-- **Online:** every tool is published with GitHub Pages at `https://jamestsatsaronis.github.io/simulations/<file>.html`. The links in the tables above open the live versions. The site has no index page, so the root URL returns a 404.
+- **Online:** every tool is published with GitHub Pages at `https://jamestsatsaronis.github.io/simulations/<file>.html`. The links in the tables above open the live versions. The landing page at the site root (`index.html`) lists them all.
 - **In an LMS:** embed the hosted URL with an iframe, for example:
   ```html
   <iframe src="https://jamestsatsaronis.github.io/simulations/enzyme-kinetics-sim.html"
